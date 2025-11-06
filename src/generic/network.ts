@@ -1,19 +1,20 @@
 import {
     PaperbackInterceptor,
+    URL,
     type Request,
     type Response,
     type SearchQuery,
     type SortingOption,
 } from "@paperback/types";
 import * as cheerio from "cheerio";
-import { base_url } from "./main";
-import { getGenreFilter, getPageCache, URLBuilder } from "./utils";
+import { cache, filter, MangaWorldGeneric } from "./main";
 
 export class Requests {
     constructSearchRequestURL(
         page: number,
         query: SearchQuery = { title: "", filters: [] },
         sorting: SortingOption | undefined,
+        source: MangaWorldGeneric,
     ): {
         url: string;
         excluded: { generi: string[]; tipi: string[] };
@@ -24,7 +25,6 @@ export class Requests {
         const tipologia: string[] = [];
         const stato: string[] = [];
         const anno: string[] = [];
-
         const getFilterValue = (id: string) =>
             query.filters.find((filter) => filter.id == id)?.value;
         const genres: string | Record<string, "included" | "excluded"> =
@@ -40,8 +40,9 @@ export class Requests {
                 if (tag[1] == "included") generi.push(tag[0]);
                 if (tag[1] == "excluded")
                     generi_esclusi.push(
-                        getGenreFilter().find((item) => item.id === tag[0])
-                            ?.value ?? "",
+                        filter
+                            .getGenreFilter()
+                            .find((item) => item.id === tag[0])?.value ?? "",
                     );
             }
         }
@@ -65,41 +66,40 @@ export class Requests {
             }
         } else if (year.length > 0) anno.push(year);
 
-        const urlBuilder = new URLBuilder(base_url).addPathComponent("archive");
+        const url = new URL(source.base_url).addPathComponent("archive");
         if (query.title.toString().length > 0)
-            urlBuilder.addQueryParameter(
-                "keyword",
-                query.title.toString() ?? "",
-            );
-        urlBuilder.addQueryParameter("page", page.toString());
-        if (sorting?.id) urlBuilder.addQueryParameter("sort", sorting?.id);
-        if (generi.length > 0) urlBuilder.addQueryParameter("genre", generi);
-        if (tipologia.length > 0)
-            urlBuilder.addQueryParameter("type", tipologia);
-        if (stato.length > 0) urlBuilder.addQueryParameter("status", stato[0]);
-        if (anno.length > 0) urlBuilder.addQueryParameter("year", anno[0]);
+            url.setQueryItem("keyword", query.title.toString() ?? "");
+        url.setQueryItem("page", page.toString());
+        if (sorting?.id) url.setQueryItem("sort", sorting?.id);
+        if (generi.length > 0) url.setQueryItem("genre", generi);
+        if (tipologia.length > 0) url.setQueryItem("type", tipologia);
+        if (stato.length > 0) url.setQueryItem("status", stato[0] ?? "");
+        if (anno.length > 0) url.setQueryItem("year", anno[0] ?? "");
         return {
-            url: urlBuilder.buildUrl(),
+            url: url.toString(),
             excluded: { generi: generi_esclusi, tipi: tipi_esclusi },
         };
     }
 
-    async parseFilters() {
+    async parseFilters(source: MangaWorldGeneric) {
         const data = (
             await Application.scheduleRequest({
-                url: `${base_url}/archive`,
+                url: `${source.base_url}/archive`,
                 method: "GET",
             })
         )[1];
         return cheerio.load(Application.arrayBufferToUTF8String(data));
     }
 
-    async parseLastMangaAddedSectionRequests(page: number) {
+    async parseLastMangaAddedSectionRequests(
+        page: number,
+        source: MangaWorldGeneric,
+    ) {
         let $: cheerio.CheerioAPI;
         if (page > 1) {
             const data = (
                 await Application.scheduleRequest({
-                    url: `${base_url}/archive?sort=newest&page=${page}`,
+                    url: `${source.base_url}/archive?sort=newest&page=${page}`,
                     method: "GET",
                 })
             )[1];
@@ -107,9 +107,9 @@ export class Requests {
         } else {
             $ = cheerio.load(
                 Application.arrayBufferToUTF8String(
-                    await getPageCache(
+                    await cache.getPageCache(
                         "LastMangaAddedSection",
-                        `${base_url}/archive?sort=newest&page=${page}`,
+                        `${source.base_url}/archive?sort=newest&page=${page}`,
                     ),
                 ),
             );
@@ -117,7 +117,10 @@ export class Requests {
         return $;
     }
 
-    async parseLastMangaAddedTagsSectionRequests(page: number) {
+    async parseLastMangaAddedTagsSectionRequests(
+        page: number,
+        source: MangaWorldGeneric,
+    ) {
         let $: cheerio.CheerioAPI;
         const tags = (Application.getState("fav_tags_new") as string[]).join(
             "&genre=",
@@ -125,7 +128,7 @@ export class Requests {
         if (page > 1) {
             const data = (
                 await Application.scheduleRequest({
-                    url: `${base_url}/archive?sort=newest&page=${page}&genre=${tags}`,
+                    url: `${source.base_url}/archive?sort=newest&page=${page}&genre=${tags}`,
                     method: "GET",
                 })
             )[1];
@@ -133,9 +136,9 @@ export class Requests {
         } else {
             $ = cheerio.load(
                 Application.arrayBufferToUTF8String(
-                    await getPageCache(
+                    await cache.getPageCache(
                         "LastMangaAddedTagsSection",
-                        `${base_url}/archive?sort=newest&page=${page}&genre=${tags}`,
+                        `${source.base_url}/archive?sort=newest&page=${page}&genre=${tags}`,
                     ),
                 ),
             );
@@ -143,22 +146,25 @@ export class Requests {
         return $;
     }
 
-    async parseLastAddedSectionRequests(page: number) {
+    async parseLastAddedSectionRequests(
+        page: number,
+        source: MangaWorldGeneric,
+    ) {
         const data = (
             await Application.scheduleRequest({
-                url: `${base_url}?page=${page}`,
+                url: `${source.base_url}?page=${page}`,
                 method: "GET",
             })
         )[1];
         return cheerio.load(Application.arrayBufferToUTF8String(data));
     }
 
-    async parsePopularSectionRequests(page: number) {
+    async parsePopularSectionRequests(page: number, source: MangaWorldGeneric) {
         let $: cheerio.CheerioAPI;
         if (page > 1) {
             const data = (
                 await Application.scheduleRequest({
-                    url: `${base_url}/archive?sort=most_read&page=${page}`,
+                    url: `${source.base_url}/archive?sort=most_read&page=${page}`,
                     method: "GET",
                 })
             )[1];
@@ -166,9 +172,9 @@ export class Requests {
         } else {
             $ = cheerio.load(
                 Application.arrayBufferToUTF8String(
-                    await getPageCache(
+                    await cache.getPageCache(
                         "PopularSection",
-                        `${base_url}/archive?sort=most_read&page=${page}`,
+                        `${source.base_url}/archive?sort=most_read&page=${page}`,
                     ),
                 ),
             );

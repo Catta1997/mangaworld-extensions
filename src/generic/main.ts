@@ -22,22 +22,15 @@ import {
 } from "@paperback/types";
 import * as cheerio from "cheerio";
 import { Forms } from "./forms";
+import type { Metadata } from "./models";
 import { MainInterceptor, Requests } from "./network";
 import { Parsers } from "./parsers";
-import {
-    blacklistedTags,
-    blacklistedType,
-    getGenreFilter,
-    getMangaTypeFilter,
-    getOrderFilter,
-    getPageCache,
-    getRating,
-    getStatusFilter,
-    getYearFilter,
-    populateFilter,
-    type Metadata,
-} from "./utils";
+import { Cache, FilterPreferences, Tags, Type } from "./utils";
 
+export const cache = new Cache();
+export const filter = new FilterPreferences();
+export const tags = new Tags();
+export const types = new Type();
 export interface GenericParams {
     name: string;
     domain: string;
@@ -45,8 +38,7 @@ export interface GenericParams {
     parser?: Parsers;
     requestManager?: Requests;
 }
-export let base_url = "";
-export let defaultContentRating = ContentRating.EVERYONE;
+
 export abstract class MangaWorldGeneric
     implements
         SettingsFormProviding,
@@ -57,25 +49,28 @@ export abstract class MangaWorldGeneric
         DiscoverSectionProviding
 {
     readonly name: string;
-
+    public base_url = "";
+    public defaultContentRating = ContentRating.EVERYONE;
     parser: Parsers;
-
     requestManager: Requests;
+    mainRateLimiter: BasicRateLimiter;
+    mainInterceptor: MainInterceptor;
 
     protected constructor(params: GenericParams) {
         this.name = params.name;
-        base_url = params.domain;
-        defaultContentRating = params.contentRating ?? ContentRating.EVERYONE;
+        this.base_url = params.domain;
+        this.defaultContentRating =
+            params.contentRating ?? ContentRating.EVERYONE;
         this.parser = params.parser ?? new Parsers();
         this.requestManager = params.requestManager ?? new Requests();
+        // Rate limit: Wait 1 sec after 3 requests
+        this.mainRateLimiter = new BasicRateLimiter("main", {
+            numberOfRequests: 3,
+            bufferInterval: 1,
+            ignoreImages: true,
+        });
+        this.mainInterceptor = new MainInterceptor("main");
     }
-    mainInterceptor = new MainInterceptor("main");
-    // Rate limit: Wait 1 sec after 3 requests
-    mainRateLimiter = new BasicRateLimiter("main", {
-        numberOfRequests: 3,
-        bufferInterval: 1,
-        ignoreImages: true,
-    });
 
     async initialise(): Promise<void> {
         this.mainRateLimiter.registerInterceptor();
@@ -83,19 +78,20 @@ export abstract class MangaWorldGeneric
     }
 
     async getSettingsForm(): Promise<Form> {
-        await populateFilter();
+        await filter.populateFilter(this);
         return new Forms();
     }
 
     async getSearchFilters(): Promise<SearchFilter[]> {
-        await populateFilter();
+        await filter.populateFilter(this);
         const filters: SearchFilter[] = [];
         const def_value = ((Application.getState("def_type") as string[]) ??
             [])[0];
         const getExcludedTypeObject = {
             ...Object.fromEntries(
-                getMangaTypeFilter()
-                    .filter((option) => blacklistedType(option.id))
+                filter
+                    .getMangaTypeFilter()
+                    .filter((option) => types.blacklistedType(option.id))
                     .map((item) => [item.id, "excluded" as const]),
             ),
             ...(def_value
@@ -104,13 +100,14 @@ export abstract class MangaWorldGeneric
         } as Record<string, "included" | "excluded">;
 
         const getExcludedValueObject = Object.fromEntries(
-            getGenreFilter()
-                .filter((option) => blacklistedTags([option.id]))
+            filter
+                .getGenreFilter()
+                .filter((option) => tags.blacklistedTags([option.id]))
                 .map((item) => [item.id, "excluded" as const]),
         ) as Record<string, "included" | "excluded">;
         filters.push({
             type: "multiselect",
-            options: getMangaTypeFilter(),
+            options: filter.getMangaTypeFilter(),
             id: "types",
             allowExclusion: true,
             title: "Tipologia",
@@ -120,7 +117,7 @@ export abstract class MangaWorldGeneric
         });
         filters.push({
             type: "multiselect",
-            options: getGenreFilter(),
+            options: filter.getGenreFilter(),
             id: "genres",
             allowExclusion: true,
             title: "Genere",
@@ -130,14 +127,14 @@ export abstract class MangaWorldGeneric
         });
         filters.push({
             type: "dropdown",
-            options: getStatusFilter(),
+            options: filter.getStatusFilter(),
             id: "status",
             title: "Stato",
             value: "",
         });
         filters.push({
             type: "dropdown",
-            options: getYearFilter(),
+            options: filter.getYearFilter(),
             id: "year",
             title: "Anno",
             value: "",
@@ -145,58 +142,49 @@ export abstract class MangaWorldGeneric
         return filters;
     }
 
-    // Populates search
     async getSearchResults(
         query: SearchQuery,
         metadata: Metadata,
         sorting: SortingOption,
     ): Promise<PagedResults<SearchResultItem>> {
-        const manga: SearchResultItem[] = [];
         const page = metadata?.page ?? 1;
         const { url, excluded } = this.requestManager.constructSearchRequestURL(
             page,
             query,
             sorting,
+            this,
         );
         const $ = await this.requestManager.getSearchResultsRequests(url);
-        const pagText = $(".search-quantity").text().trim().split(" ")[0];
-        const total = pagText === "Nessun" ? 0 : Number(pagText);
-        const newPage = await this.parser.parseSearchResults($, excluded);
-        manga.push(...newPage);
-        console.log(`Total Manga: ${total} , found ${manga.length}`);
-        if (manga.length >= total || total == 0 || manga.length == 0)
-            return { items: manga, metadata: undefined };
-        else return { items: manga, metadata: { page: page + 1 } };
+        return await this.parser.parseSearchResults($, excluded, this, page);
     }
 
-    // Populates the title details
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
-        console.log("[MANGA] Get Details of MangaID " + mangaId);
-        const data = getPageCache(mangaId, `${base_url}/manga/${mangaId}`);
+        const data = cache.getPageCache(
+            mangaId,
+            `${this.base_url}/manga/${mangaId}`,
+        );
         const $ = cheerio.load(Application.arrayBufferToUTF8String(await data));
         return this.parser.parseMangaDetails(
             $,
             mangaId,
-            `${base_url}/manga/${mangaId}`,
+            `${this.base_url}/manga/${mangaId}`,
+            this,
         );
     }
 
-    // Populates the chapter list
     async getChapters(sourceManga: SourceManga): Promise<Chapter[]> {
-        console.log("[MANGA] Get Chapters of MangaID " + sourceManga.mangaId);
-        const data = getPageCache(
+        const data = cache.getPageCache(
             sourceManga.mangaId,
-            `${base_url}/manga/${sourceManga.mangaId}`,
+            `${this.base_url}/manga/${sourceManga.mangaId}`,
         );
         const $ = cheerio.load(Application.arrayBufferToUTF8String(await data));
         return this.parser.parseChapters($, sourceManga);
     }
 
-    // Populates a chapter with images
     async getChapterDetails(chapter: Chapter): Promise<ChapterDetails> {
-        const data = getPageCache(
+        const data = cache.getPageCache(
             `${chapter.sourceManga.mangaId}-${chapter.chapterId}`,
-            `${base_url}/manga/${chapter.sourceManga.mangaId}/read/${chapter.chapterId}/?style=list`,
+            `${this.base_url}/manga/${chapter.sourceManga.mangaId}/read/${chapter.chapterId}/?style=list`,
         );
         const $ = cheerio.load(Application.arrayBufferToUTF8String(await data));
         return this.parser.parseChapterDetails(
@@ -298,58 +286,49 @@ export abstract class MangaWorldGeneric
         return discover_section;
     }
 
-    async getDiscoverSectionItems(
-        section: DiscoverSection,
-        metadata: Metadata,
-    ): Promise<PagedResults<DiscoverSectionItem>> {
-        const $ = cheerio.load(
-            Application.arrayBufferToUTF8String(
-                await getPageCache("home", base_url),
-            ),
-        );
-        switch (section.id) {
+    async getSection(id: string, $: cheerio.CheerioAPI, metadata: Metadata) {
+        switch (id) {
             case "popular_section": {
-                console.log("[HOME] Loading popular_section");
-                return this.parser.parseTrendingChapters($, metadata);
+                return this.parser.parseTrendingChapters($, metadata, this);
             }
             case "mese_section": {
-                console.log("[HOME] Loading mese_section");
-                return this.parser.parseMonthTrending($, metadata);
+                return this.parser.parseMonthTrending($, metadata, this);
             }
             case "most_read_section": {
-                console.log("[HOME] Loading most_read_section");
-                return this.parser.parseMostReadSection(metadata);
+                return this.parser.parseMostReadSection(metadata, this);
             }
             case "updated_section": {
-                console.log("[HOME] Loading updated_section");
-                return this.parser.parseLastAddedSection($, metadata);
+                return this.parser.parseLastAddedSection($, metadata, this);
             }
             case "new_manga_section": {
-                console.log("[HOME] Loading new_manga_section");
-                return this.parser.parseLastMangaAddedSection(metadata);
+                return this.parser.parseLastMangaAddedSection(metadata, this);
             }
             case "new_fav_type_section": {
-                console.log("[HOME] Loading new_fav_type_section");
-                return this.parser.parseLastMangaAddedTagsSection(metadata);
+                return this.parser.parseLastMangaAddedTagsSection(
+                    metadata,
+                    this,
+                );
             }
             case "genre_section": {
-                await populateFilter();
+                await filter.populateFilter(this);
                 const allGenres: DiscoverSectionItem[] = [];
-                getGenreFilter()
-                    .filter((option) => !blacklistedTags([option.id]))
-                    .forEach((filter) => {
+                filter
+                    .getGenreFilter()
+                    .filter((option) => !tags.blacklistedTags([option.id]))
+                    .forEach((filterItem) => {
                         const getExcludedValueObject = {
                             ...Object.fromEntries(
-                                getGenreFilter()
+                                filter
+                                    .getGenreFilter()
                                     .filter((option) =>
-                                        blacklistedTags([option.id]),
+                                        tags.blacklistedTags([option.id]),
                                     )
                                     .map((item) => [
                                         item.id,
                                         "excluded" as const,
                                     ]),
                             ),
-                            [filter.id]: "included" as const,
+                            [filterItem.id]: "included" as const,
                         } as Record<string, "included" | "excluded">;
                         allGenres.push({
                             type: "genresCarouselItem",
@@ -362,38 +341,40 @@ export abstract class MangaWorldGeneric
                                     },
                                 ],
                             },
-                            name: filter.value,
+                            name: filterItem.value,
                             metadata: metadata,
                             contentRating:
-                                defaultContentRating === ContentRating.ADULT
+                                this.defaultContentRating ===
+                                ContentRating.ADULT
                                     ? ContentRating.ADULT
-                                    : getRating([filter.value]),
+                                    : tags.getRating([filterItem.value]),
                         });
                     });
-                console.log("[HOME] Loading genre_section");
                 return {
                     items: allGenres,
                     metadata: metadata,
                 };
             }
             case "type_section": {
-                await populateFilter();
+                await filter.populateFilter(this);
                 const mangaType: DiscoverSectionItem[] = [];
-                getMangaTypeFilter()
-                    .filter((option) => !blacklistedType(option.value))
-                    .forEach((filter) => {
+                filter
+                    .getMangaTypeFilter()
+                    .filter((option) => !types.blacklistedType(option.value))
+                    .forEach((filterItem) => {
                         const getExcludedTypeObject = {
                             ...Object.fromEntries(
-                                getMangaTypeFilter()
+                                filter
+                                    .getMangaTypeFilter()
                                     .filter((option) =>
-                                        blacklistedType(option.value),
+                                        types.blacklistedType(option.value),
                                     )
                                     .map((item) => [
                                         item.id,
                                         "excluded" as const,
                                     ]),
                             ),
-                            [filter.id]: "included" as const,
+                            [filterItem.id]: "included" as const,
                         } as Record<string, "included" | "excluded">;
                         mangaType.push({
                             type: "genresCarouselItem",
@@ -406,12 +387,11 @@ export abstract class MangaWorldGeneric
                                     },
                                 ],
                             },
-                            name: filter.value,
+                            name: filterItem.value,
                             metadata: metadata,
                             contentRating: ContentRating.EVERYONE,
                         });
                     });
-                console.log("[HOME] Loading type_section");
                 return {
                     items: mangaType,
                     metadata: metadata,
@@ -422,8 +402,20 @@ export abstract class MangaWorldGeneric
         }
     }
 
+    async getDiscoverSectionItems(
+        section: DiscoverSection,
+        metadata: Metadata,
+    ): Promise<PagedResults<DiscoverSectionItem>> {
+        const $ = cheerio.load(
+            Application.arrayBufferToUTF8String(
+                await cache.getPageCache("home", this.base_url),
+            ),
+        );
+        return await this.getSection(section.id, $, metadata);
+    }
+
     async getSortingOptions(): Promise<SortingOption[]> {
-        return getOrderFilter().map((item) => ({
+        return filter.getOrderFilter().map((item) => ({
             id: item.id,
             label: item.value,
         }));

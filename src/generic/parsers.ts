@@ -10,31 +10,25 @@ import {
     type TagSection,
 } from "@paperback/types";
 import * as cheerio from "cheerio";
-import { defaultContentRating } from "./main";
+import { MangaWorldGeneric, tags, types } from "./main";
+import type { Metadata } from "./models";
 import { Requests } from "./network";
-import {
-    blacklistedTags,
-    blacklistedType,
-    excludedTags,
-    excludedTypes,
-    getRating,
-    type Metadata,
-} from "./utils";
 
+const requests = new Requests();
 export class Parsers {
-    private requests = new Requests();
-
     /**
      * Get Manga Detail
      * @param {cheerio.CheerioAPI} $ - Request
      * @param {string} mangaId - MangaID
      * @param {string} shareURL - shareURL
+     * @param source
      * @return {SourceManga} - SourceManga
      */
     parseMangaDetails(
         $: cheerio.CheerioAPI,
         mangaId: string,
         shareURL: string,
+        source: MangaWorldGeneric,
     ): SourceManga {
         const title: string = $(".name.bigger").text().trim() ?? "";
         const image: string =
@@ -90,9 +84,9 @@ export class Parsers {
             arrayTags.push({ title: tag, id: tag.replaceAll(" ", "-") });
         }
         const rating =
-            defaultContentRating === ContentRating.ADULT
+            source.defaultContentRating === ContentRating.ADULT
                 ? ContentRating.ADULT
-                : getRating(arrayTags.map((tag) => tag.title));
+                : tags.getRating(arrayTags.map((tag) => tag.title));
         const tagSections: TagSection[] = [
             { id: "genres", title: "genres", tags: arrayTags },
         ];
@@ -121,14 +115,12 @@ export class Parsers {
      * @return {Chapter[]} - Chapters
      */
     parseChapters($: cheerio.CheerioAPI, sourceManga: SourceManga): Chapter[] {
-        console.log(sourceManga);
         const chapters: Chapter[] = [];
         const arrChapters = $(".chapter").toArray().reverse();
         for (const item of arrChapters) {
             const href = $("a", item).attr("href") ?? "";
             const chapterId =
                 (href.match(/read\/([^/]+)+/i) ?? ["null", ""])[1] ?? "";
-            //const name = $("a", item).attr("title") ?? "";
             const volN = $(item)
                 .closest(".volume-element")
                 .find(".volume-name")
@@ -241,18 +233,22 @@ export class Parsers {
      * Search Parsing
      * @param {cheerio.CheerioAPI} $ - Request
      * @param excluded
+     * @param source
+     * @param page
      * @return {SearchResultItem[]} items
      */
     async parseSearchResults(
         $: cheerio.CheerioAPI,
         excluded: { generi: string[]; tipi: string[] },
-    ): Promise<SearchResultItem[]> {
+        source: MangaWorldGeneric,
+        page: number,
+    ): Promise<{ items: SearchResultItem[]; metadata: Metadata | undefined }> {
         const results: SearchResultItem[] = [];
         const parse = this.parsePage($);
         for (const item of parse) {
             if (
-                !excludedTypes(item.type, excluded.tipi) &&
-                !excludedTags(item.tags, excluded.generi)
+                !types.excludedTypes(item.type, excluded.tipi) &&
+                !tags.excludedTags(item.tags, excluded.generi)
             ) {
                 results.push({
                     imageUrl: item.image,
@@ -260,24 +256,34 @@ export class Parsers {
                     subtitle: item.authors,
                     mangaId: item.id,
                     contentRating:
-                        defaultContentRating === ContentRating.ADULT
+                        source.defaultContentRating === ContentRating.ADULT
                             ? ContentRating.ADULT
-                            : getRating(item.tags),
+                            : tags.getRating(item.tags),
                 });
             }
         }
-        return results;
+        const regexDinamica = new RegExp(`"totalPages":(\\d+)`, "m");
+        const match = $.html().match(regexDinamica);
+        let totalPages = 1;
+        if (match && match[1]) {
+            totalPages = parseInt(match[1], 10) ?? 1;
+        }
+        if (page + 1 > totalPages)
+            return { items: results, metadata: undefined };
+        else return { items: results, metadata: { page: page + 1 } };
     }
 
     /**
      * Parsing trending chapters
      * @param {Metadata} metadata - metadata
      * @param {cheerio.CheerioAPI} $ - Request
+     * @param source
      * @return { items: DiscoverSectionItem[] }
      */
     parseTrendingChapters(
         $: cheerio.CheerioAPI,
         metadata: Metadata,
+        source: MangaWorldGeneric,
     ): { items: DiscoverSectionItem[] } {
         const trending: DiscoverSectionItem[] = [];
         const arrTrending = $(".entry.vertical").toArray();
@@ -289,12 +295,10 @@ export class Parsers {
             const image = $("a img", obj).attr("src") ?? "";
             const chapNum = $("a div", obj).text() ?? "";
             const title = $(".manga-title", obj).text().trim();
-            //console.log("Capitoli in tendenza");
-            //console.log("Parsed: Manga " + title + " Chap: " + chapNum);
             trending.push({
                 metadata: metadata,
                 type: "featuredCarouselItem",
-                contentRating: defaultContentRating,
+                contentRating: source.defaultContentRating,
                 supertitle: chapNum,
                 imageUrl: image,
                 mangaId: id,
@@ -308,11 +312,13 @@ export class Parsers {
      * Parsing month trending
      * @param {Metadata} metadata - metadata
      * @param {cheerio.CheerioAPI} $ - Request
+     * @param source
      * @return [ { items: DiscoverSectionItem[], metadata: Metadata }, { items: DiscoverSectionItem[], metadata: Metadata } ]
      */
     parseMonthTrending(
         $: cheerio.CheerioAPI,
         metadata: Metadata,
+        source: MangaWorldGeneric,
     ): { items: DiscoverSectionItem[]; metadata: Metadata } {
         const arrHotTitle = $(".col-12 .top-wrapper .entry").toArray();
         const hot: DiscoverSectionItem[] = [];
@@ -323,13 +329,11 @@ export class Parsers {
                 ) ?? ["null"])[0] ?? "";
             const image = $(".img-fluid", obj).attr("src") ?? "";
             const title = $(".name", obj).first().text().trim() ?? "";
-            //console.log("In tendenza Mese");
-            //console.log("Parsed: Manga " + title);
             if (hot.length < 10) {
                 hot.push({
                     metadata: metadata,
                     type: "prominentCarouselItem",
-                    contentRating: defaultContentRating,
+                    contentRating: source.defaultContentRating,
                     imageUrl: image,
                     mangaId: id,
                     title: title,
@@ -342,57 +346,74 @@ export class Parsers {
     /**
      * Parsing most read
      * @param {Metadata} metadata - metadata
+     * @param source
      * @return {{ items: DiscoverSectionItem[], metadata: Metadata }}
      */
     async parseMostReadSection(
         metadata: Metadata,
+        source: MangaWorldGeneric,
     ): Promise<{ items: DiscoverSectionItem[]; metadata: Metadata }> {
         let page = metadata?.page ?? 1;
-        const $ = await this.requests.parsePopularSectionRequests(page);
+        const $ = await requests.parsePopularSectionRequests(page, source);
         page++;
-        const latest = await this.parseSection($, page);
+        const latest = await this.parseSection($, page, source);
         return { items: latest, metadata: { page: page } };
     }
 
     /**
      * Parsing last added
      * @param {Metadata} metadata - metadata
+     * @param source
      * @return {{ items: DiscoverSectionItem[], metadata: Metadata }}
      */
     async parseLastMangaAddedSection(
         metadata: Metadata,
+        source: MangaWorldGeneric,
     ): Promise<{ items: DiscoverSectionItem[]; metadata: Metadata }> {
         let page = metadata?.page ?? 1;
-        const $ = await this.requests.parseLastMangaAddedSectionRequests(page);
+        const $ = await requests.parseLastMangaAddedSectionRequests(
+            page,
+            source,
+        );
         page++;
-        const latest = await this.parseSection($, page);
+        const latest = await this.parseSection($, page, source);
         return { items: latest, metadata: { page: page } };
     }
 
     async parseLastMangaAddedTagsSection(
         metadata: Metadata,
+        source: MangaWorldGeneric,
     ): Promise<{ items: DiscoverSectionItem[]; metadata: Metadata }> {
         let page = metadata?.page ?? 1;
-        const $ =
-            await this.requests.parseLastMangaAddedTagsSectionRequests(page);
+        const $ = await requests.parseLastMangaAddedTagsSectionRequests(
+            page,
+            source,
+        );
         page++;
-        const latest = await this.parseSection($, page);
+        const latest = await this.parseSection($, page, source);
         return { items: latest, metadata: { page: page } };
     }
 
-    async parseSection($: cheerio.CheerioAPI, page: number) {
+    async parseSection(
+        $: cheerio.CheerioAPI,
+        page: number,
+        source: MangaWorldGeneric,
+    ) {
         const latest: DiscoverSectionItem[] = [];
         const parse = this.parsePage($);
         for (const item of parse) {
-            if (!blacklistedTags(item.tags) && !blacklistedType(item.type)) {
+            if (
+                !tags.blacklistedTags(item.tags) &&
+                !types.blacklistedType(item.type)
+            ) {
                 latest.push({
                     metadata: { page: page },
                     subtitle: item.authors,
                     type: "simpleCarouselItem",
                     contentRating:
-                        defaultContentRating === ContentRating.ADULT
+                        source.defaultContentRating === ContentRating.ADULT
                             ? ContentRating.ADULT
-                            : getRating(item.tags),
+                            : tags.getRating(item.tags),
                     imageUrl: item.image,
                     mangaId: item.id,
                     title: item.title,
@@ -406,21 +427,23 @@ export class Parsers {
      * Parse new chapters
      * @param {cheerio.CheerioAPI} $ - page
      * @param {Metadata} metadata - manga metadata
+     * @param source
      * @return {{
-     * 		items: DiscoverSectionItem[],
-     * 		metadata: Metadata | undefined
-     * 	}}
+     *        items: DiscoverSectionItem[],
+     *        metadata: Metadata | undefined
+     *    }}
      */
     async parseLastAddedSection(
         $: cheerio.CheerioAPI,
         metadata: Metadata,
+        source: MangaWorldGeneric,
     ): Promise<{
         items: DiscoverSectionItem[];
         metadata: Metadata | undefined;
     }> {
         let page = metadata?.page ?? 1;
         if (page > 1) {
-            $ = await this.requests.parseLastAddedSectionRequests(page);
+            $ = await requests.parseLastAddedSectionRequests(page, source);
         }
         page++;
         const arrLatest = $(
@@ -443,9 +466,6 @@ export class Parsers {
                     $(".d-flex.flex-wrap.flex-row a", obj).attr("href") ?? ""
                 ).match(/\/read\/([a-f0-9]+)(?:\?.*)?$/i) ?? ["null", ""])[1] ??
                 "";
-            //console.log("Ultime Aggiunte");
-            //console.log("Parsed: Manga " + title);
-            //console.log("Parsed: Ch " + chapterId);
             const regexDinamica = new RegExp(
                 `"createdAt":\\s*"([^"]+)"\\s*,\\s*"updatedAt":\\s*"[^"]*"\\s*,\\s*"slugFolder":\\s*"[^"]*"\\s*,\\s*"__v":\\s*\\d+\\s*,\\s*"createdAtT":\\s*"[^"]*"\\s*,\\s*"createdAtTWithYear":\\s*"[^"]*"\\s*,\\s*"isNew":\\s*(true|false)\\s*,\\s*"id":\\s*"${chapterId}"`,
                 "m",
@@ -453,16 +473,15 @@ export class Parsers {
             const match = $.html().match(regexDinamica);
             let data = new Date();
             if (match && match[1]) {
-                //console.log("Data trovata:" + match[1]);
                 data = new Date(match[1]);
             }
-            if (!blacklistedType(mangaType)) {
+            if (!types.blacklistedType(mangaType)) {
                 latest.push({
                     chapterId: chapterId,
                     metadata: metadata,
                     type: "chapterUpdatesCarouselItem",
                     publishDate: data,
-                    contentRating: defaultContentRating,
+                    contentRating: source.defaultContentRating,
                     imageUrl: image,
                     mangaId: id,
                     title: title,

@@ -6,7 +6,7 @@ import {
     ToggleRow,
     type FormSectionElement,
 } from "@paperback/types";
-import { getGenreFilter, getMangaTypeFilter } from "./utils";
+import { filter } from "./main";
 
 export class Forms extends Form {
     override getSections(): FormSectionElement[] {
@@ -28,19 +28,18 @@ export class Forms extends Form {
 }
 
 class FilterSettings extends Form {
-    genres = getGenreFilter().map(({ value, ...rest }) => ({
+    genres = filter.getGenreFilter().map(({ value, ...rest }) => ({
         title: value,
         ...rest,
     }));
 
-    mangaTypes = getMangaTypeFilter().map(({ value, ...rest }) => ({
+    mangaTypes = filter.getMangaTypeFilter().map(({ value, ...rest }) => ({
         title: value,
         ...rest,
     }));
 
     public async updateValue(value: string[], filter: string): Promise<void> {
         Application.setState(value, filter);
-        console.log(`[SETTINGS] Updated: [${value.join(",")}] per ${filter}`);
         this.reloadForm();
         Application.invalidateSearchFilters();
     }
@@ -104,7 +103,6 @@ class FilterSettings extends Form {
         ];
     }
 
-    // hide_tags
     getHideTagsStatus(): string[] {
         return (
             (Application.getState("hide_tags") as string[] | undefined) ?? []
@@ -115,7 +113,6 @@ class FilterSettings extends Form {
         await this.updateValue(value, "hide_tags");
     }
 
-    // hide_type
     getHideTypeStatus(): string[] {
         return (
             (Application.getState("hide_type") as string[] | undefined) ?? []
@@ -126,7 +123,6 @@ class FilterSettings extends Form {
         await this.updateValue(value, "hide_type");
     }
 
-    // def_type
     getDefTypeStatus(): string[] {
         return (Application.getState("def_type") as string[] | undefined) ?? [];
     }
@@ -139,7 +135,6 @@ class FilterSettings extends Form {
 class FavSettings extends Form {
     public async updateValue(value: string[], filter: string): Promise<void> {
         Application.setState(value, filter);
-        console.log(`[SETTINGS] Updated: [${value.join(",")}] per ${filter}`);
         this.reloadForm();
         Application.invalidateSearchFilters();
     }
@@ -149,11 +144,10 @@ class FavSettings extends Form {
         filter: string,
     ): Promise<void> {
         Application.setState(value, filter);
-        console.log(`[SETTINGS] Updated: [${value}] per ${filter}`);
         this.reloadForm();
         Application.invalidateDiscoverSections();
     }
-    genres = getGenreFilter().map(({ value, ...rest }) => ({
+    genres = filter.getGenreFilter().map(({ value, ...rest }) => ({
         title: value,
         ...rest,
     }));
@@ -193,7 +187,6 @@ class FavSettings extends Form {
         ];
     }
 
-    // fav_section_enabled
     getFavStatus(): boolean {
         return (Application.getState("fav_section_enabled") as boolean) ?? true;
     }
@@ -202,7 +195,6 @@ class FavSettings extends Form {
         await this.updateToggleValue(value, "fav_section_enabled");
     }
 
-    // fav_tags_new
     getFavTagsNewStatus(): string[] {
         return (
             (Application.getState("fav_tags_new") as string[] | undefined) ?? []
@@ -221,7 +213,6 @@ class HomeSettings extends Form {
         filter: string,
     ): Promise<void> {
         Application.setState(value, filter);
-        console.log(`[SETTINGS] Updated: [${value}] per ${filter}`);
         this.reloadForm();
         Application.invalidateDiscoverSections();
     }
@@ -299,7 +290,6 @@ class HomeSettings extends Form {
         ];
     }
 
-    // popular_section_enabled
     getPopularStatus(): boolean {
         return (
             (Application.getState("popular_section_enabled") as boolean) ?? true
@@ -310,7 +300,6 @@ class HomeSettings extends Form {
         await this.updateToggleValue(value, "popular_section_enabled");
     }
 
-    // mese_section_enabled
     getMeseStatus(): boolean {
         return (
             (Application.getState("mese_section_enabled") as boolean) ?? true
@@ -321,7 +310,6 @@ class HomeSettings extends Form {
         await this.updateToggleValue(value, "mese_section_enabled");
     }
 
-    // most_read_section_enabled
     getMostReadStatus(): boolean {
         return (
             (Application.getState("most_read_section_enabled") as boolean) ??
@@ -333,7 +321,6 @@ class HomeSettings extends Form {
         await this.updateToggleValue(value, "most_read_section_enabled");
     }
 
-    // update_section_enabled
     getUpdateStatus(): boolean {
         return (
             (Application.getState("update_section_enabled") as boolean) ?? true
@@ -344,7 +331,6 @@ class HomeSettings extends Form {
         await this.updateToggleValue(value, "update_section_enabled");
     }
 
-    // new_section_enabled
     getNewStatus(): boolean {
         return (Application.getState("new_section_enabled") as boolean) ?? true;
     }
@@ -353,7 +339,6 @@ class HomeSettings extends Form {
         await this.updateToggleValue(value, "new_section_enabled");
     }
 
-    // type_section_enabled
     getTypeStatus(): boolean {
         return (
             (Application.getState("type_section_enabled") as boolean) ?? true
@@ -364,7 +349,6 @@ class HomeSettings extends Form {
         await this.updateToggleValue(value, "type_section_enabled");
     }
 
-    // genre_section_enabled
     getGenreStatus(): boolean {
         return (
             (Application.getState("genre_section_enabled") as boolean) ?? true

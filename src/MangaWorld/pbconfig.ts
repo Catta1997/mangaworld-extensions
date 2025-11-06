@@ -5,10 +5,10 @@ import {
 } from "@paperback/types";
 
 export default {
-    version: "1.1.0",
     name: "MangaWorld",
     description: "Extension that pulls manga from MangaWorld.",
-    icon: "MangaWorldIcon.png",
+    version: "1.0.0-alpha.1",
+    icon: "icon.png",
     language: "it",
     contentRating: ContentRating.EVERYONE,
     capabilities: [
