@@ -120,11 +120,12 @@ export class Requests {
     async parseLastMangaAddedTagsSectionRequests(
         page: number,
         source: MangaWorldGeneric,
+        favTags: boolean,
     ) {
         let $: cheerio.CheerioAPI;
-        const tags = (Application.getState("fav_tags_new") as string[]).join(
-            "&genre=",
-        );
+        const tags = favTags
+            ? (Application.getState("fav_tags_new") as string[]).join("&genre=")
+            : "";
         if (page > 1) {
             const data = (
                 await Application.scheduleRequest({

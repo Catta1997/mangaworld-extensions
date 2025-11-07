@@ -1,7 +1,19 @@
-import { ContentRating } from "@paperback/types";
+import { ContentRating, type Tag } from "@paperback/types";
 import * as cheerio from "cheerio";
+import type {
+    ChapterList,
+    Genre,
+    GlobalData,
+    JSONConfig,
+    MangaPageData,
+    MangaWorldData,
+    SearchInfo,
+    SearchResults,
+    TrendingChaptersData,
+    WindowEntry,
+} from "./jsonInterface";
 import type { MangaWorldGeneric } from "./main";
-import type { CacheItem, OptionItem } from "./models";
+import type { CacheItem, OptionItem, RawEntry } from "./models";
 import { Requests } from "./network";
 
 const cacheMap = new Map<string, CacheItem>();
@@ -13,17 +25,17 @@ export class Cache {
         const cacheTime = 10; //cache seconds
         const cached = cacheMap.get(name);
         if (cached && cached.expires > Math.floor(Date.now() / 1000)) {
-            console.log(`[CACHE] Use Cached Page "${name}"`);
+            //console.log(`[CACHE] Use Cached Page "${name}"`);
             return cached.data;
         }
 
         // If a request is already in progress for this name, return that promise
         if (requestMap.has(name)) {
-            console.log(`[CACHE] Awaiting Request "${name}"`);
+            //console.log(`[CACHE] Awaiting Request "${name}"`);
             return requestMap.get(name)!;
         }
 
-        console.log(`[CACHE] Fetching New Page "${name}"`);
+        //console.log(`[CACHE] Fetching New Page "${name}"`);
 
         const fetchPromise = requests
             .fetchPage(url)
@@ -32,12 +44,12 @@ export class Cache {
                     expires: Math.floor(Date.now() / 1000) + cacheTime,
                     data: data,
                 });
-                console.log(`[CACHE] New Cached "${name}"`);
+                //console.log(`[CACHE] New Cached "${name}"`);
                 requestMap.delete(name);
                 return data;
             })
             .catch((error) => {
-                console.log(`[CACHE] Error on cache "${name} - ${error}"`);
+                //console.log(`[CACHE] Error on cache "${name} - ${error}"`);
                 requestMap.delete(name);
                 throw error;
             });
@@ -201,7 +213,7 @@ export class FilterPreferences {
             Application.getState("last-filter-fetch-date") ?? 0,
         );
         if (lastFilterFetch + 604800 > new Date().valueOf() / 1000) {
-            console.log("[CACHE] Use Cached Filters");
+            //console.log("[CACHE] Use Cached Filters");
             this.setGenreFilter(
                 JSON.parse(
                     Application.getState(".genres") as string,
@@ -263,5 +275,91 @@ export class FilterPreferences {
         });
         Application.setState(JSON.stringify(result), filterSelector);
         return result;
+    }
+}
+
+export class JsonParser {
+    isMangaData(data: unknown): data is MangaPageData {
+        return typeof data === "object" && data !== null && "manga" in data;
+    }
+
+    isGlobalData(data: unknown): data is { globalData: GlobalData } {
+        return (
+            typeof data === "object" && data !== null && "globalData" in data
+        );
+    }
+
+    isMangaChapterData(data: unknown): data is ChapterList {
+        return typeof data === "object" && data !== null && "pages" in data;
+    }
+
+    isTrendingData(data: unknown): data is TrendingChaptersData {
+        return (
+            typeof data === "object" &&
+            data !== null &&
+            "mostViewedChapters" in data
+        );
+    }
+
+    isSearchData(data: unknown): data is SearchResults {
+        return typeof data === "object" && data !== null && "selected" in data;
+    }
+
+    isSearchInfoData(data: unknown): data is SearchInfo {
+        return (
+            typeof data === "object" && data !== null && "totalPages" in data
+        );
+    }
+    //[MangaWorld] error: A JavaScript error occurred: undefined is not an object (evaluating 'json.o.w').; additionalInfo: stack=getWindowEntry@main.js:21824:40
+
+    convertEntries(w: (RawEntry | WindowEntry)[]): WindowEntry[] {
+        return w.map((entry): WindowEntry => {
+            // se è già un oggetto tipizzato, lo ritorni diretto
+            if (!Array.isArray(entry)) return entry;
+
+            const [key, index, data, meta] = entry;
+
+            if (this.isMangaData(data))
+                return { kind: "manga", key, index, data, meta };
+            if (this.isGlobalData(data))
+                return { kind: "global", key, index, data, meta };
+            if (this.isTrendingData(data))
+                return { kind: "trending", key, index, data, meta };
+            if (this.isMangaChapterData(data))
+                return { kind: "chapter", key, index, data, meta };
+            if (this.isSearchData(data))
+                return { kind: "search", key, index, data, meta };
+            if (this.isSearchInfoData(data))
+                return { kind: "searchInfo", key, index, data, meta };
+            return {
+                kind: "config",
+                key,
+                index,
+                data: data as JSONConfig,
+                meta,
+            };
+        });
+    }
+
+    getWindowEntry($: cheerio.CheerioAPI): WindowEntry[] {
+        const html = $.html();
+        const regex =
+            /<script[^>]*>\s*[^<]*?\$MC\s*=\s*\(window\.\$MC\|\|\[\]\)\.concat\(([\s\S]*?)\)\s*<\/script>/i;
+
+        const match = html.match(regex);
+
+        if (!match?.[1]) {
+            throw new Error("No JSON Found");
+        }
+        const jsonText = match[1].trim();
+        const json = JSON.parse(jsonText) as MangaWorldData;
+        return this.convertEntries(json.o.w);
+    }
+
+    mapGenresToTags(genres: Genre[]): Tag[] {
+        return genres.map((genre) => ({
+            id: genre._id,
+            title: genre.name,
+        }));
     }
 }

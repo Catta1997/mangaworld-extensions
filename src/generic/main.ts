@@ -6,6 +6,7 @@ import {
     type Chapter,
     type ChapterDetails,
     type ChapterProviding,
+    type ChapterUpdatesCarouselItem,
     type DiscoverSection,
     type DiscoverSectionItem,
     type DiscoverSectionProviding,
@@ -22,15 +23,17 @@ import {
 } from "@paperback/types";
 import * as cheerio from "cheerio";
 import { Forms } from "./forms";
+import type { WindowEntry } from "./jsonInterface";
 import type { Metadata } from "./models";
 import { MainInterceptor, Requests } from "./network";
 import { Parsers } from "./parsers";
-import { Cache, FilterPreferences, Tags, Type } from "./utils";
+import { Cache, FilterPreferences, JsonParser, Tags, Type } from "./utils";
 
 export const cache = new Cache();
 export const filter = new FilterPreferences();
 export const tags = new Tags();
 export const types = new Type();
+export const jsonParser = new JsonParser();
 export interface GenericParams {
     name: string;
     domain: string;
@@ -155,7 +158,13 @@ export abstract class MangaWorldGeneric
             this,
         );
         const $ = await this.requestManager.getSearchResultsRequests(url);
-        return await this.parser.parseSearchResults($, excluded, this, page);
+        const windowEntry = jsonParser.getWindowEntry($);
+        return await this.parser.parseSearchResults(
+            excluded,
+            this,
+            page,
+            windowEntry,
+        );
     }
 
     async getMangaDetails(mangaId: string): Promise<SourceManga> {
@@ -164,8 +173,9 @@ export abstract class MangaWorldGeneric
             `${this.base_url}/manga/${mangaId}`,
         );
         const $ = cheerio.load(Application.arrayBufferToUTF8String(await data));
+        const windowEntry = jsonParser.getWindowEntry($);
         return this.parser.parseMangaDetails(
-            $,
+            windowEntry,
             mangaId,
             `${this.base_url}/manga/${mangaId}`,
             this,
@@ -178,9 +188,11 @@ export abstract class MangaWorldGeneric
             `${this.base_url}/manga/${sourceManga.mangaId}`,
         );
         const $ = cheerio.load(Application.arrayBufferToUTF8String(await data));
-        return this.parser.parseChapters($, sourceManga);
+        const windowEntry = jsonParser.getWindowEntry($);
+        return this.parser.parseChapters(windowEntry, sourceManga);
     }
 
+    // not possible in JSON
     async getChapterDetails(chapter: Chapter): Promise<ChapterDetails> {
         const data = cache.getPageCache(
             `${chapter.sourceManga.mangaId}-${chapter.chapterId}`,
@@ -286,27 +298,69 @@ export abstract class MangaWorldGeneric
         return discover_section;
     }
 
-    async getSection(id: string, $: cheerio.CheerioAPI, metadata: Metadata) {
+    async getSection(id: string, json: WindowEntry[], metadata: Metadata) {
+        let section: { items: DiscoverSectionItem[]; metadata: Metadata } = {
+            items: [],
+            metadata: metadata,
+        };
+        const chapterUpdate: ChapterUpdatesCarouselItem[] = [];
+        for (const item of json) {
+            switch (item.kind) {
+                case "trending":
+                    if (id == "popular_section")
+                        section = this.parser.parseTrendingChapters(
+                            metadata,
+                            this,
+                            item.data.mostViewedChapters,
+                        );
+                    break;
+                case "global":
+                    if (id == "mese_section")
+                        section = this.parser.parseMonthTrending(
+                            metadata,
+                            this,
+                            item.data.globalData.topMangas,
+                        );
+                    break;
+                case "manga":
+                    if (id == "updated_section") {
+                        const updated_section =
+                            await this.parser.parseLastAddedSection(
+                                metadata,
+                                this,
+                                item.data.manga,
+                            );
+                        if (updated_section)
+                            chapterUpdate.push(updated_section);
+                    }
+                    break;
+            }
+        }
+        if (chapterUpdate.length > 0) {
+            section = { items: chapterUpdate, metadata: metadata };
+        }
+        if (section.items.length > 1) {
+            return section;
+        }
         switch (id) {
-            case "popular_section": {
-                return this.parser.parseTrendingChapters($, metadata, this);
-            }
-            case "mese_section": {
-                return this.parser.parseMonthTrending($, metadata, this);
-            }
+            // loaded
             case "most_read_section": {
                 return this.parser.parseMostReadSection(metadata, this);
             }
-            case "updated_section": {
-                return this.parser.parseLastAddedSection($, metadata, this);
-            }
+            //loaded
             case "new_manga_section": {
-                return this.parser.parseLastMangaAddedSection(metadata, this);
-            }
-            case "new_fav_type_section": {
-                return this.parser.parseLastMangaAddedTagsSection(
+                return this.parser.parseLastMangaAddedSection(
                     metadata,
                     this,
+                    false,
+                );
+            }
+            //loaded
+            case "new_fav_type_section": {
+                return this.parser.parseLastMangaAddedSection(
+                    metadata,
+                    this,
+                    true,
                 );
             }
             case "genre_section": {
@@ -411,7 +465,8 @@ export abstract class MangaWorldGeneric
                 await cache.getPageCache("home", this.base_url),
             ),
         );
-        return await this.getSection(section.id, $, metadata);
+        const windowEntry = jsonParser.getWindowEntry($);
+        return await this.getSection(section.id, windowEntry, metadata);
     }
 
     async getSortingOptions(): Promise<SortingOption[]> {
