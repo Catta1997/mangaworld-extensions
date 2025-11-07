@@ -260,7 +260,7 @@ export class FilterPreferences {
     mapGenresToOptionItem(genres?: Genre[] | null): OptionItem[] {
         if (!genres) return [];
         return genres.map((genre) => ({
-            id: genre._id,
+            id: genre.slug,
             value: genre.name,
         }));
     }
@@ -411,7 +411,7 @@ export class JsonParser {
 
     mapGenresToTags(genres: Genre[]): Tag[] {
         return genres.map((genre) => ({
-            id: genre._id,
+            id: genre.slug,
             title: genre.name,
         }));
     }
