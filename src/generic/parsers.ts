@@ -98,10 +98,7 @@ export class Parsers {
     parseChapters(items: WindowEntry[], sourceManga: SourceManga): Chapter[] {
         const chapters: Chapter[] = [];
         items.forEach((item) => {
-            console.log(item.kind);
             if (item.kind == "chapter") {
-                console.log(item.data.pages.volumes.length);
-                console.log(item.data.pages.singleChapters.length);
                 if (item.data.pages.volumes.length > 0) {
                     item.data.pages.volumes.forEach((volume) => {
                         volume.chapters.forEach((chapter) => {
@@ -153,7 +150,6 @@ export class Parsers {
      *   pages: string[]
      * }} - Details
      */
-    // not possible in JSON
     parseChapterDetails(
         $: cheerio.CheerioAPI,
         mangaId: string,

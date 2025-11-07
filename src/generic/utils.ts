@@ -363,11 +363,9 @@ export class JsonParser {
             typeof data === "object" && data !== null && "totalPages" in data
         );
     }
-    //[MangaWorld] error: A JavaScript error occurred: undefined is not an object (evaluating 'json.o.w').; additionalInfo: stack=getWindowEntry@main.js:21824:40
 
     convertEntries(w: (RawEntry | WindowEntry)[]): WindowEntry[] {
         return w.map((entry): WindowEntry => {
-            // se è già un oggetto tipizzato, lo ritorni diretto
             if (!Array.isArray(entry)) return entry;
 
             const [key, index, data, meta] = entry;

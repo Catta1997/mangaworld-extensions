@@ -192,7 +192,6 @@ export abstract class MangaWorldGeneric
         return this.parser.parseChapters(windowEntry, sourceManga);
     }
 
-    // not possible in JSON
     async getChapterDetails(chapter: Chapter): Promise<ChapterDetails> {
         const data = cache.getPageCache(
             `${chapter.sourceManga.mangaId}-${chapter.chapterId}`,
@@ -343,11 +342,9 @@ export abstract class MangaWorldGeneric
             return section;
         }
         switch (id) {
-            // loaded
             case "most_read_section": {
                 return this.parser.parseMostReadSection(metadata, this);
             }
-            //loaded
             case "new_manga_section": {
                 return this.parser.parseLastMangaAddedSection(
                     metadata,
@@ -355,7 +352,6 @@ export abstract class MangaWorldGeneric
                     false,
                 );
             }
-            //loaded
             case "new_fav_type_section": {
                 return this.parser.parseLastMangaAddedSection(
                     metadata,
