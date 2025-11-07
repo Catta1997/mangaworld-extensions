@@ -76,16 +76,15 @@ export interface Manga {
 
 export interface MangaChapterList {
     _id: string;
-    manga: string;
+    manga: string | Manga;
     name: string;
-    volume?: Volume[];
+    volume?: Volume[] | null;
     __v: number;
     createdAt: string;
     dayViews: number;
     monthViews: number;
     pages: string[];
     slugFolder: string;
-    title: null;
     totViews: number;
     updatedAt: string;
     view: boolean;
@@ -245,7 +244,7 @@ export type WindowEntry =
 
 export interface TrendingChaptersData {
     URL: string;
-    mostViewedChapters: JSONChapter[];
+    mostViewedChapters: MangaChapterList[];
 }
 
 export interface MangaWorldData {

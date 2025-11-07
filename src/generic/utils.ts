@@ -12,7 +12,7 @@ import type {
     TrendingChaptersData,
     WindowEntry,
 } from "./jsonInterface";
-import type { MangaWorldGeneric } from "./main";
+import { jsonParser, type MangaWorldGeneric } from "./main";
 import type { CacheItem, OptionItem, RawEntry } from "./models";
 import { Requests } from "./network";
 
@@ -95,7 +95,8 @@ export class Tags {
 
     getRating(tags: string[]): ContentRating {
         for (const tag of tags) {
-            const matchedRating = this.tagRatingMap[tag.toUpperCase()];
+            const matchedRating =
+                this.tagRatingMap[tag.toUpperCase()] ?? undefined;
             if (matchedRating) return matchedRating;
         }
         return ContentRating.EVERYONE;
@@ -212,7 +213,7 @@ export class FilterPreferences {
         const lastFilterFetch = Number(
             Application.getState("last-filter-fetch-date") ?? 0,
         );
-        if (lastFilterFetch + 604800 > new Date().valueOf() / 1000) {
+        if (lastFilterFetch - 604800 > new Date().valueOf() / 1000) {
             //console.log("[CACHE] Use Cached Filters");
             this.setGenreFilter(
                 JSON.parse(
@@ -241,16 +242,68 @@ export class FilterPreferences {
             );
         } else {
             const $ = await requests.parseFilters(source);
-            this.setGenreFilter(this.extractOptions($, ".genres"));
+            const windowEntry = jsonParser.getWindowEntry($);
+            const JSONFilter = this.extractOptionJSON(windowEntry);
+            //this.setGenreFilter(this.extractOptions($, ".genres"));
             this.setMangaTypeFilter(this.extractOptions($, ".type"));
             this.setStatusFilter(this.extractOptions($, ".status"));
             this.setOrderFilter(this.extractOptions($, ".sort"));
-            this.setYearFilter(this.extractOptions($, ".year"));
+            //this.setYearFilter(this.extractOptions($, ".year"));
+            this.setGenreFilter(JSONFilter.genres);
+            this.setYearFilter(JSONFilter.year);
             Application.setState(
                 String(new Date().valueOf() / 1000),
                 "last-filter-fetch-date",
             );
         }
+    }
+    mapGenresToOptionItem(genres?: Genre[] | null): OptionItem[] {
+        if (!genres) return [];
+        return genres.map((genre) => ({
+            id: genre._id,
+            value: genre.name,
+        }));
+    }
+
+    mapStringToOptionItem(tags: (string | number)[]): OptionItem[] {
+        if (!tags) return [];
+        const stringtags = tags.map((v) => String(v));
+        return stringtags.map((tag) => ({
+            id: tag,
+            value: tag,
+        }));
+    }
+
+    extractOptionJSON(json: WindowEntry[]): {
+        genres: OptionItem[];
+        author: OptionItem[];
+        artist: OptionItem[];
+        year: OptionItem[];
+    } {
+        const filters: {
+            genres: OptionItem[];
+            author: OptionItem[];
+            artist: OptionItem[];
+            year: OptionItem[];
+        } = {
+            genres: [],
+            author: [],
+            artist: [],
+            year: [],
+        };
+        json.forEach((item) => {
+            if (item.kind == "global") {
+                filters.genres = this.mapGenresToOptionItem(
+                    item.data.globalData.genres,
+                );
+            }
+            if (item.kind == "search") {
+                filters.artist = this.mapStringToOptionItem(item.data.artists);
+                filters.year = this.mapStringToOptionItem(item.data.years);
+                filters.author = this.mapStringToOptionItem(item.data.authors);
+            }
+        });
+        return filters;
     }
     /**
      * Extract filter option {value, id}.
