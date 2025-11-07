@@ -213,7 +213,7 @@ export class FilterPreferences {
         const lastFilterFetch = Number(
             Application.getState("last-filter-fetch-date") ?? 0,
         );
-        if (lastFilterFetch - 604800 > new Date().valueOf() / 1000) {
+        if (lastFilterFetch + 604800 > new Date().valueOf() / 1000) {
             //console.log("[CACHE] Use Cached Filters");
             this.setGenreFilter(
                 JSON.parse(

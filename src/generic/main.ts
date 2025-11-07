@@ -328,7 +328,7 @@ export abstract class MangaWorldGeneric
                             await this.parser.parseLastAddedSection(
                                 metadata,
                                 this,
-                                item.data.manga,
+                                item.data,
                             );
                         if (updated_section)
                             chapterUpdate.push(updated_section);

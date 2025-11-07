@@ -11,7 +11,12 @@ import {
     type TagSection,
 } from "@paperback/types";
 import * as cheerio from "cheerio";
-import type { Manga, TrendinManga, WindowEntry } from "./jsonInterface";
+import type {
+    Manga,
+    MangaPageData,
+    TrendinManga,
+    WindowEntry,
+} from "./jsonInterface";
 import { jsonParser, MangaWorldGeneric, tags, types } from "./main";
 import type { Metadata } from "./models";
 import { Requests } from "./network";
@@ -391,21 +396,21 @@ export class Parsers {
     async parseLastAddedSection(
         metadata: Metadata,
         source: MangaWorldGeneric,
-        manga: Manga,
+        manga: MangaPageData,
     ): Promise<ChapterUpdatesCarouselItem | undefined> {
         return {
             chapterId: "items.manga",
             metadata: metadata,
             type: "chapterUpdatesCarouselItem",
-            publishDate: new Date(manga.createdAt),
+            publishDate: new Date(manga.manga.createdAt),
             contentRating:
                 source.defaultContentRating === ContentRating.ADULT
                     ? ContentRating.ADULT
                     : source.defaultContentRating,
-            imageUrl: manga.imageT ?? manga.image,
-            mangaId: manga.linkId + "/" + manga.slug,
-            title: manga.title,
-            subtitle: manga.fansub?.name ?? "",
+            imageUrl: manga.manga.imageT ?? manga.manga.image,
+            mangaId: manga.manga.linkId + "/" + manga.manga.slug,
+            title: manga.manga.title,
+            subtitle: manga.chapters[0]?.name ?? "",
         };
     }
 }

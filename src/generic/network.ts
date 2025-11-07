@@ -138,7 +138,7 @@ export class Requests {
             $ = cheerio.load(
                 Application.arrayBufferToUTF8String(
                     await cache.getPageCache(
-                        "LastMangaAddedTagsSection",
+                        `LastMangaAddedTagsSection-${tags}`,
                         `${source.base_url}/archive?sort=newest&page=${page}&genre=${tags}`,
                     ),
                 ),

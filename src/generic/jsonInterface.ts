@@ -123,65 +123,62 @@ export interface SearchInfo {
     totalPages: number;
 }
 
-
 export interface MangaPageData {
     type: string;
     manga: Manga;
     chapters: JSONChapter[];
 }
 
-
 export type WindowEntry =
     | {
-    kind: "config";
-    key: string;
-    index: number;
-    data: object;
-    meta?: { f?: number };
-}
+          kind: "config";
+          key: string;
+          index: number;
+          data: object;
+          meta?: { f?: number };
+      }
     | {
-    kind: "global";
-    key: string;
-    index: number;
-    data: { globalData: GlobalData };
-    meta?: { f?: number };
-}
+          kind: "global";
+          key: string;
+          index: number;
+          data: { globalData: GlobalData };
+          meta?: { f?: number };
+      }
     | {
-    kind: "manga";
-    key: string;
-    index: number;
-    data: MangaPageData;
-    meta?: { f?: number };
-}
+          kind: "manga";
+          key: string;
+          index: number;
+          data: MangaPageData;
+          meta?: { f?: number };
+      }
     | {
-    kind: "trending";
-    key: string;
-    index: number;
-    data: TrendingChaptersData;
-    meta?: { f?: number };
-}
+          kind: "trending";
+          key: string;
+          index: number;
+          data: TrendingChaptersData;
+          meta?: { f?: number };
+      }
     | {
-    kind: "chapter";
-    key: string;
-    index: number;
-    data: ChapterList;
-    meta?: { f?: number };
-}
+          kind: "chapter";
+          key: string;
+          index: number;
+          data: ChapterList;
+          meta?: { f?: number };
+      }
     | {
-    kind: "search";
-    key: string;
-    index: number;
-    data: SearchResults;
-    meta?: { f?: number };
-}
+          kind: "search";
+          key: string;
+          index: number;
+          data: SearchResults;
+          meta?: { f?: number };
+      }
     | {
-    kind: "searchInfo";
-    key: string;
-    index: number;
-    data: SearchInfo;
-    meta?: { f?: number };
-};
-
+          kind: "searchInfo";
+          key: string;
+          index: number;
+          data: SearchInfo;
+          meta?: { f?: number };
+      };
 
 export interface MangaWorldData {
     o: {
