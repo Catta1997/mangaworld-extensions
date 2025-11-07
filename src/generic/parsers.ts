@@ -11,7 +11,7 @@ import {
     type TagSection,
 } from "@paperback/types";
 import * as cheerio from "cheerio";
-import type { Manga, MangaChapterList, WindowEntry } from "./jsonInterface";
+import type { Manga, TrendinManga, WindowEntry } from "./jsonInterface";
 import { jsonParser, MangaWorldGeneric, tags, types } from "./main";
 import type { Metadata } from "./models";
 import { Requests } from "./network";
@@ -104,13 +104,15 @@ export class Parsers {
                                 chapterId: chapter.id,
                                 sourceManga: sourceManga,
                                 volume: Number(
-                                    volume.volume.name.split(" ")[1],
+                                    volume.volume.slugFolder.split("-")[1],
                                 ),
                                 version:
                                     sourceManga.mangaInfo.additionalInfo
                                         ?.subs ?? "",
                                 langCode: "🇮🇹",
-                                chapNum: Number(chapter.name.split(" ")[1]),
+                                chapNum: Number(
+                                    chapter.slugFolder.split("-")[1],
+                                ),
                                 publishDate: new Date(chapter.createdAt),
                             });
                         });
@@ -259,24 +261,22 @@ export class Parsers {
     parseTrendingChapters(
         metadata: Metadata,
         source: MangaWorldGeneric,
-        chapters: MangaChapterList[],
+        chapters: TrendinManga[],
     ): { items: DiscoverSectionItem[]; metadata: Metadata } {
         const trending: DiscoverSectionItem[] = [];
         chapters.forEach((chapter) => {
-            if (typeof chapter.manga == "object") {
-                trending.push({
-                    metadata: metadata,
-                    type: "featuredCarouselItem",
-                    contentRating:
-                        source.defaultContentRating === ContentRating.ADULT
-                            ? ContentRating.ADULT
-                            : source.defaultContentRating,
-                    supertitle: chapter.name,
-                    mangaId: chapter.manga.linkId + "/" + chapter.manga.slug,
-                    title: chapter.manga.title,
-                    imageUrl: chapter.manga.imageT ?? chapter.manga.image,
-                });
-            }
+            trending.push({
+                metadata: metadata,
+                type: "featuredCarouselItem",
+                contentRating:
+                    source.defaultContentRating === ContentRating.ADULT
+                        ? ContentRating.ADULT
+                        : source.defaultContentRating,
+                supertitle: chapter.name,
+                mangaId: chapter.manga.linkId + "/" + chapter.manga.slug,
+                title: chapter.manga.title,
+                imageUrl: chapter.manga.imageT ?? chapter.manga.image,
+            });
         });
         return { items: trending, metadata: metadata };
     }
@@ -305,7 +305,7 @@ export class Parsers {
                               manga.genres?.map((genre) => genre.name) ?? [],
                           ),
                 imageUrl: manga.imageT ?? manga.image,
-                mangaId: manga.id,
+                mangaId: manga.linkId + "/" + manga.slug,
                 title: manga.title,
             });
         });

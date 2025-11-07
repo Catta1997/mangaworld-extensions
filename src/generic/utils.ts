@@ -343,7 +343,7 @@ export class JsonParser {
     }
 
     isMangaChapterData(data: unknown): data is ChapterList {
-        return typeof data === "object" && data !== null && "pages" in data;
+        return typeof data === "object" && data !== null && "CDN_URL" in data;
     }
 
     isTrendingData(data: unknown): data is TrendingChaptersData {

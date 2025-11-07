@@ -74,45 +74,43 @@ export interface Manga {
     id: string;
 }
 
-export interface MangaChapterList {
+export interface TrendinManga {
     _id: string;
-    manga: string | Manga;
+    manga: Manga;
     name: string;
-    volume?: Volume[] | null;
-    __v: number;
     createdAt: string;
-    dayViews: number;
-    monthViews: number;
     pages: string[];
     slugFolder: string;
-    totViews: number;
     updatedAt: string;
-    view: boolean;
     createdAtT: string;
     createdAtTWithYear: string;
-    isNew: boolean;
+    id: string;
+}
+
+export interface MangaChapterList {
+    _id: string;
+    manga: string;
+    name: string;
+    createdAt: string;
+    pages: string[];
+    slugFolder: string;
+    updatedAt: string;
+    createdAtT: string;
+    createdAtTWithYear: string;
     id: string;
 }
 
 export interface JSONChapter {
     _id: string;
     pages: string[];
-    view: boolean;
-    totViews: number;
-    dayViews: number;
-    monthViews: number;
-    manga: Manga;
-    volume: string | null;
+    manga?: Manga;
+    volume?: string;
     name: string;
-    title: string | null;
-    note: string | null;
+    title: string;
     createdAt: string;
     updatedAt: string;
     slugFolder: string;
-    __v: number;
     createdAtT: string;
-    createdAtTWithYear: string;
-    isNew: boolean;
     id: string;
 }
 
@@ -120,12 +118,9 @@ export interface Volume {
     _id: string;
     manga: string;
     name: string;
-    createdAt: string;
-    updatedAt: string;
     slugFolder: string;
     __v: number;
     image: string;
-    createdAtTWithYear: string;
     imageT: string;
     id: string;
 }
@@ -191,6 +186,11 @@ export interface SearchInfo {
     page: number;
 }
 
+export interface TrendingChaptersData {
+    URL: string;
+    mostViewedChapters: TrendinManga[];
+}
+
 export type WindowEntry =
     | {
           kind: "config";
@@ -241,11 +241,6 @@ export type WindowEntry =
           data: SearchInfo;
           meta?: { f?: number };
       };
-
-export interface TrendingChaptersData {
-    URL: string;
-    mostViewedChapters: MangaChapterList[];
-}
 
 export interface MangaWorldData {
     o: {
