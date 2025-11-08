@@ -5,6 +5,7 @@ import {
     type ChapterUpdatesCarouselItem,
     type DiscoverSectionItem,
     type MangaInfo,
+    type PagedResults,
     type SearchResultItem,
     type SourceManga,
     type Tag,
@@ -17,7 +18,7 @@ import type {
     WindowEntry,
 } from "./jsonInterface";
 import { jsonParser, MangaWorldGeneric, tags, types } from "./main";
-import type { Metadata } from "./models";
+import type { MangaMetadata } from "./models";
 import { Requests } from "./network";
 
 const requests = new Requests();
@@ -191,11 +192,11 @@ export class Parsers {
                 manga.data.mangas.forEach((manga) => {
                     items.push({
                         id: manga.linkId + "/" + manga.slug,
-                        title: manga.title,
-                        image: manga.imageT ?? manga.image,
+                        title: manga.title ?? "",
+                        image: manga.imageT ?? manga.image ?? "",
                         tags: manga.genres?.map((genre) => genre.name) ?? [],
-                        authors: manga.author.join(", "),
-                        type: manga.typeT ?? manga.type,
+                        authors: manga.author.join(", ") ?? "",
+                        type: manga.typeT ?? manga.type ?? "",
                     });
                 });
             }
@@ -207,17 +208,18 @@ export class Parsers {
      * Search Parsing
      * @param excluded
      * @param source
-     * @param page
+     * @param metadata
      * @param json
      * @return {SearchResultItem[]} items
      */
     async parseSearchResults(
         excluded: { generi: string[]; tipi: string[] },
         source: MangaWorldGeneric,
-        page: number,
+        metadata: MangaMetadata | undefined,
         json: WindowEntry[],
-    ): Promise<{ items: SearchResultItem[]; metadata: Metadata | undefined }> {
+    ): Promise<PagedResults<SearchResultItem>> {
         const results: SearchResultItem[] = [];
+        const page = metadata?.page ?? 1;
         const parse = this.parsePage(json);
         for (const item of parse) {
             if (
@@ -255,10 +257,10 @@ export class Parsers {
      * @return { items: DiscoverSectionItem[] }
      */
     parseTrendingChapters(
-        metadata: Metadata,
+        metadata: MangaMetadata,
         source: MangaWorldGeneric,
         chapters: TrendinManga[],
-    ): { items: DiscoverSectionItem[]; metadata: Metadata } {
+    ): { items: DiscoverSectionItem[]; metadata: MangaMetadata } {
         const trending: DiscoverSectionItem[] = [];
         chapters.forEach((chapter) => {
             trending.push({
@@ -285,10 +287,10 @@ export class Parsers {
      * @return [ { items: DiscoverSectionItem[], metadata: Metadata }, { items: DiscoverSectionItem[], metadata: Metadata } ]
      */
     parseMonthTrending(
-        metadata: Metadata,
+        metadata: MangaMetadata,
         source: MangaWorldGeneric,
         mangas: Manga[],
-    ): { items: DiscoverSectionItem[]; metadata: Metadata } {
+    ): { items: DiscoverSectionItem[]; metadata: MangaMetadata } {
         const hot: DiscoverSectionItem[] = [];
         mangas.forEach((manga) => {
             hot.push({
@@ -316,9 +318,9 @@ export class Parsers {
      * @return {{ items: DiscoverSectionItem[], metadata: Metadata }}
      */
     async parseMostReadSection(
-        metadata: Metadata,
+        metadata: MangaMetadata,
         source: MangaWorldGeneric,
-    ): Promise<{ items: DiscoverSectionItem[]; metadata: Metadata }> {
+    ): Promise<{ items: DiscoverSectionItem[]; metadata: MangaMetadata }> {
         let page = metadata?.page ?? 1;
         const $ = await requests.parsePopularSectionRequests(page, source);
         page++;
@@ -328,10 +330,10 @@ export class Parsers {
     }
 
     async parseLastMangaAddedSection(
-        metadata: Metadata,
+        metadata: MangaMetadata,
         source: MangaWorldGeneric,
         favTags: boolean,
-    ): Promise<{ items: DiscoverSectionItem[]; metadata: Metadata }> {
+    ): Promise<{ items: DiscoverSectionItem[]; metadata: MangaMetadata }> {
         let page = metadata?.page ?? 1;
         const html = await requests.parseLastMangaAddedTagsSectionRequests(
             page,
@@ -385,7 +387,7 @@ export class Parsers {
      */
 
     async parseLastAddedSection(
-        metadata: Metadata,
+        metadata: MangaMetadata,
         source: MangaWorldGeneric,
         manga: MangaPageData,
     ): Promise<ChapterUpdatesCarouselItem | undefined> {

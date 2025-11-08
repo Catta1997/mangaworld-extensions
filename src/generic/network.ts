@@ -81,13 +81,9 @@ export class Requests {
     }
 
     async parseFilters(source: MangaWorldGeneric) {
-        const data = (
-            await Application.scheduleRequest({
-                url: `${source.base_url}/archive`,
-                method: "GET",
-            })
-        )[1];
-        return Application.arrayBufferToUTF8String(data);
+        return Application.arrayBufferToUTF8String(
+            await cache.getPageCache("Filter", `${source.base_url}/archive`),
+        );
     }
 
     async parseLastMangaAddedTagsSectionRequests(

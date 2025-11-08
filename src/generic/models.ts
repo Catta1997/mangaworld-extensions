@@ -1,5 +1,5 @@
-export type Metadata = {
-    page?: number;
+export type MangaMetadata = {
+    page: number;
 };
 export type OptionItem = {
     value: string;

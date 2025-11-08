@@ -23,7 +23,7 @@ import {
 } from "@paperback/types";
 import { Forms } from "./forms";
 import type { WindowEntry } from "./jsonInterface";
-import type { Metadata } from "./models";
+import type { MangaMetadata } from "./models";
 import { MainInterceptor, Requests } from "./network";
 import { Parsers } from "./parsers";
 import { Cache, FilterPreferences, JsonParser, Tags, Type } from "./utils";
@@ -67,7 +67,7 @@ export abstract class MangaWorldGeneric
         this.requestManager = params.requestManager ?? new Requests();
         // Rate limit: Wait 1 sec after 5 requests
         this.mainRateLimiter = new BasicRateLimiter("main", {
-            numberOfRequests: 5,
+            numberOfRequests: 2,
             bufferInterval: 1,
             ignoreImages: true,
         });
@@ -146,7 +146,7 @@ export abstract class MangaWorldGeneric
 
     async getSearchResults(
         query: SearchQuery,
-        metadata: Metadata,
+        metadata: MangaMetadata | undefined,
         sorting: SortingOption,
     ): Promise<PagedResults<SearchResultItem>> {
         const page = metadata?.page ?? 1;
@@ -161,7 +161,7 @@ export abstract class MangaWorldGeneric
         return await this.parser.parseSearchResults(
             excluded,
             this,
-            page,
+            metadata,
             windowEntry,
         );
     }
@@ -301,11 +301,12 @@ export abstract class MangaWorldGeneric
         return discover_section;
     }
 
-    async getSection(id: string, json: WindowEntry[], metadata: Metadata) {
-        let section: { items: DiscoverSectionItem[]; metadata: Metadata } = {
-            items: [],
-            metadata: metadata,
-        };
+    async getSection(id: string, json: WindowEntry[], metadata: MangaMetadata) {
+        let section: { items: DiscoverSectionItem[]; metadata: MangaMetadata } =
+            {
+                items: [],
+                metadata: metadata,
+            };
         const chapterUpdate: ChapterUpdatesCarouselItem[] = [];
         for (const item of json) {
             switch (item.kind) {
@@ -458,7 +459,7 @@ export abstract class MangaWorldGeneric
 
     async getDiscoverSectionItems(
         section: DiscoverSection,
-        metadata: Metadata,
+        metadata: MangaMetadata,
     ): Promise<PagedResults<DiscoverSectionItem>> {
         const html = Application.arrayBufferToUTF8String(
             await cache.getPageCache("home", this.base_url),

@@ -241,7 +241,7 @@ export class FilterPreferences {
      */
     async populateFilter(source: MangaWorldGeneric) {
         const lastFilterFetch = Number(
-            Application.getState("last-filter-fetch-date") ?? 0,
+            Application.getState("last-filter-fetch") ?? 0,
         );
         if (lastFilterFetch + 604800 > new Date().valueOf() / 1000) {
             //console.log("[CACHE] Use Cached Filters");
