@@ -1,5 +1,4 @@
 import { ContentRating, type Tag } from "@paperback/types";
-import * as cheerio from "cheerio";
 import type {
     ChapterList,
     Genre,
@@ -7,12 +6,13 @@ import type {
     JSONConfig,
     MangaPageData,
     MangaWorldData,
+    Pages,
     SearchInfo,
     SearchResults,
     TrendingChaptersData,
     WindowEntry,
 } from "./jsonInterface";
-import { jsonParser, type MangaWorldGeneric } from "./main";
+import { jsonParser, MangaWorldGeneric } from "./main";
 import type { CacheItem, OptionItem, RawEntry } from "./models";
 import { Requests } from "./network";
 
@@ -20,9 +20,39 @@ const cacheMap = new Map<string, CacheItem>();
 const requestMap = new Map<string, Promise<ArrayBuffer>>();
 const requests = new Requests();
 
+const statusOptions = [
+    { value: "In corso", id: "ongoing" },
+    { value: "Finito", id: "completed" },
+    { value: "Droppato", id: "dropped" },
+    { value: "In pausa", id: "paused" },
+    { value: "Cancellato", id: "canceled" },
+];
+
+const typeOptions = [
+    { value: "Doujinshi", id: "doujinshi" },
+    { value: "Manga", id: "manga" },
+    { value: "Manhua", id: "manhua" },
+    { value: "Manhwa", id: "manhwa" },
+    { value: "Oneshot", id: "oneshot" },
+    { value: "Thai", id: "thai" },
+    { value: "Vietnamita", id: "vietnamese" },
+];
+
+const sortOptions = [
+    { value: "Più letti", id: "most_read" },
+    { value: "Meno letti", id: "less_read" },
+    { value: "Più recenti", id: "newest" },
+    { value: "Meno recenti", id: "oldest" },
+    { value: "A-Z", id: "a-z" },
+    { value: "Z-A", id: "z-a" },
+];
+
 export class Cache {
-    async getPageCache(name: string, url: string): Promise<ArrayBuffer> {
-        const cacheTime = 10; //cache seconds
+    async getPageCache(
+        name: string,
+        url: string,
+        cacheTime: number = 10,
+    ): Promise<ArrayBuffer> {
         const cached = cacheMap.get(name);
         if (cached && cached.expires > Math.floor(Date.now() / 1000)) {
             //console.log(`[CACHE] Use Cached Page "${name}"`);
@@ -241,14 +271,12 @@ export class FilterPreferences {
                 ) as OptionItem[],
             );
         } else {
-            const $ = await requests.parseFilters(source);
-            const windowEntry = jsonParser.getWindowEntry($);
+            const html = await requests.parseFilters(source);
+            const windowEntry = jsonParser.getWindowEntry(html);
             const JSONFilter = this.extractOptionJSON(windowEntry);
-            //this.setGenreFilter(this.extractOptions($, ".genres"));
-            this.setMangaTypeFilter(this.extractOptions($, ".type"));
-            this.setStatusFilter(this.extractOptions($, ".status"));
-            this.setOrderFilter(this.extractOptions($, ".sort"));
-            //this.setYearFilter(this.extractOptions($, ".year"));
+            this.setMangaTypeFilter(typeOptions);
+            this.setStatusFilter(statusOptions);
+            this.setOrderFilter(sortOptions);
             this.setGenreFilter(JSONFilter.genres);
             this.setYearFilter(JSONFilter.year);
             Application.setState(
@@ -304,30 +332,6 @@ export class FilterPreferences {
             }
         });
         return filters;
-    }
-    /**
-     * Extract filter option {value, id}.
-     * @param $ - Requests.
-     * @param filterSelector - CSS selector.
-     * @returns{[{value, id}]}.
-     */
-    extractOptions(
-        $: cheerio.CheerioAPI,
-        filterSelector: string,
-    ): OptionItem[] {
-        const options = $(`${filterSelector} select.filter-select option`);
-        const result: OptionItem[] = [];
-
-        options.each((_, el) => {
-            const id = $(el).attr("data-name");
-            const label = $(el).text().trim();
-
-            if (id) {
-                result.push({ value: label, id });
-            }
-        });
-        Application.setState(JSON.stringify(result), filterSelector);
-        return result;
     }
 }
 
@@ -392,8 +396,8 @@ export class JsonParser {
         });
     }
 
-    getWindowEntry($: cheerio.CheerioAPI): WindowEntry[] {
-        const html = $.html();
+    getWindowEntry(html: string): WindowEntry[] {
+        //const html = $.html();
         const regex =
             /<script[^>]*>\s*[^<]*?\$MC\s*=\s*\(window\.\$MC\|\|\[\]\)\.concat\(([\s\S]*?)\)\s*<\/script>/i;
 
@@ -412,5 +416,30 @@ export class JsonParser {
             id: genre.slug,
             title: genre.name,
         }));
+    }
+
+    findChapterData(page: Pages, chapterId: string) {
+        if (page.volumes.length > 0) {
+            for (const volume of page.volumes) {
+                const chapter = volume.chapters.find((c) => c.id === chapterId);
+                if (chapter) {
+                    return {
+                        chapterURL: `${volume.volume.slugFolder}-${volume.volume.id}/${chapter.slugFolder}-${chapter.id}`,
+                        mangaId: volume.volume.manga,
+                        pages: chapter.pages,
+                    };
+                }
+            }
+        } else {
+            const chapter = page.singleChapters.find((c) => c.id === chapterId);
+            if (chapter) {
+                return {
+                    chapterURL: `${chapter.slugFolder}-${chapter.id}`,
+                    mangaId: chapter.manga,
+                    pages: chapter.pages,
+                };
+            }
+        }
+        return null;
     }
 }

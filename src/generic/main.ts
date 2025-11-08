@@ -21,7 +21,6 @@ import {
     type SortingOption,
     type SourceManga,
 } from "@paperback/types";
-import * as cheerio from "cheerio";
 import { Forms } from "./forms";
 import type { WindowEntry } from "./jsonInterface";
 import type { Metadata } from "./models";
@@ -66,9 +65,9 @@ export abstract class MangaWorldGeneric
             params.contentRating ?? ContentRating.EVERYONE;
         this.parser = params.parser ?? new Parsers();
         this.requestManager = params.requestManager ?? new Requests();
-        // Rate limit: Wait 1 sec after 3 requests
+        // Rate limit: Wait 1 sec after 5 requests
         this.mainRateLimiter = new BasicRateLimiter("main", {
-            numberOfRequests: 3,
+            numberOfRequests: 5,
             bufferInterval: 1,
             ignoreImages: true,
         });
@@ -157,8 +156,8 @@ export abstract class MangaWorldGeneric
             sorting,
             this,
         );
-        const $ = await this.requestManager.getSearchResultsRequests(url);
-        const windowEntry = jsonParser.getWindowEntry($);
+        const html = await this.requestManager.getSearchResultsRequests(url);
+        const windowEntry = jsonParser.getWindowEntry(html);
         return await this.parser.parseSearchResults(
             excluded,
             this,
@@ -172,8 +171,8 @@ export abstract class MangaWorldGeneric
             mangaId,
             `${this.base_url}/manga/${mangaId}`,
         );
-        const $ = cheerio.load(Application.arrayBufferToUTF8String(await data));
-        const windowEntry = jsonParser.getWindowEntry($);
+        const html = Application.arrayBufferToUTF8String(await data);
+        const windowEntry = jsonParser.getWindowEntry(html);
         return this.parser.parseMangaDetails(
             windowEntry,
             mangaId,
@@ -186,22 +185,27 @@ export abstract class MangaWorldGeneric
         const data = cache.getPageCache(
             sourceManga.mangaId,
             `${this.base_url}/manga/${sourceManga.mangaId}`,
+            15,
         );
-        const $ = cheerio.load(Application.arrayBufferToUTF8String(await data));
-        const windowEntry = jsonParser.getWindowEntry($);
+        const html = Application.arrayBufferToUTF8String(await data);
+        const windowEntry = jsonParser.getWindowEntry(html);
         return this.parser.parseChapters(windowEntry, sourceManga);
     }
 
     async getChapterDetails(chapter: Chapter): Promise<ChapterDetails> {
         const data = cache.getPageCache(
-            `${chapter.sourceManga.mangaId}-${chapter.chapterId}`,
-            `${this.base_url}/manga/${chapter.sourceManga.mangaId}/read/${chapter.chapterId}/?style=list`,
-        );
-        const $ = cheerio.load(Application.arrayBufferToUTF8String(await data));
-        return this.parser.parseChapterDetails(
-            $,
             chapter.sourceManga.mangaId,
+            `${this.base_url}/manga/${chapter.sourceManga.mangaId}`,
+        );
+        const html = Application.arrayBufferToUTF8String(await data);
+        const windowEntry = jsonParser.getWindowEntry(html);
+        const slug = chapter.sourceManga.mangaId.split("/")[1];
+        const id = chapter.sourceManga.mangaId.split("/")[0];
+        return this.parser.parseChapterDetails(
+            windowEntry,
             chapter.chapterId,
+            slug ?? "",
+            id ?? "",
         );
     }
 
@@ -456,12 +460,10 @@ export abstract class MangaWorldGeneric
         section: DiscoverSection,
         metadata: Metadata,
     ): Promise<PagedResults<DiscoverSectionItem>> {
-        const $ = cheerio.load(
-            Application.arrayBufferToUTF8String(
-                await cache.getPageCache("home", this.base_url),
-            ),
+        const html = Application.arrayBufferToUTF8String(
+            await cache.getPageCache("home", this.base_url),
         );
-        const windowEntry = jsonParser.getWindowEntry($);
+        const windowEntry = jsonParser.getWindowEntry(html);
         return await this.getSection(section.id, windowEntry, metadata);
     }
 

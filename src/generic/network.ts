@@ -6,7 +6,6 @@ import {
     type SearchQuery,
     type SortingOption,
 } from "@paperback/types";
-import * as cheerio from "cheerio";
 import { cache, filter, MangaWorldGeneric } from "./main";
 
 export class Requests {
@@ -88,33 +87,7 @@ export class Requests {
                 method: "GET",
             })
         )[1];
-        return cheerio.load(Application.arrayBufferToUTF8String(data));
-    }
-
-    async parseLastMangaAddedSectionRequests(
-        page: number,
-        source: MangaWorldGeneric,
-    ) {
-        let $: cheerio.CheerioAPI;
-        if (page > 1) {
-            const data = (
-                await Application.scheduleRequest({
-                    url: `${source.base_url}/archive?sort=newest&page=${page}`,
-                    method: "GET",
-                })
-            )[1];
-            $ = cheerio.load(Application.arrayBufferToUTF8String(data));
-        } else {
-            $ = cheerio.load(
-                Application.arrayBufferToUTF8String(
-                    await cache.getPageCache(
-                        "LastMangaAddedSection",
-                        `${source.base_url}/archive?sort=newest&page=${page}`,
-                    ),
-                ),
-            );
-        }
-        return $;
+        return Application.arrayBufferToUTF8String(data);
     }
 
     async parseLastMangaAddedTagsSectionRequests(
@@ -122,7 +95,7 @@ export class Requests {
         source: MangaWorldGeneric,
         favTags: boolean,
     ) {
-        let $: cheerio.CheerioAPI;
+        let html = "";
         const tags = favTags
             ? (Application.getState("fav_tags_new") as string[]).join("&genre=")
             : "";
@@ -133,35 +106,20 @@ export class Requests {
                     method: "GET",
                 })
             )[1];
-            $ = cheerio.load(Application.arrayBufferToUTF8String(data));
+            html = Application.arrayBufferToUTF8String(data);
         } else {
-            $ = cheerio.load(
-                Application.arrayBufferToUTF8String(
-                    await cache.getPageCache(
-                        `LastMangaAddedTagsSection-${tags}`,
-                        `${source.base_url}/archive?sort=newest&page=${page}&genre=${tags}`,
-                    ),
+            html = Application.arrayBufferToUTF8String(
+                await cache.getPageCache(
+                    `LastMangaAddedTagsSection-${tags}`,
+                    `${source.base_url}/archive?sort=newest&page=${page}&genre=${tags}`,
                 ),
             );
         }
-        return $;
-    }
-
-    async parseLastAddedSectionRequests(
-        page: number,
-        source: MangaWorldGeneric,
-    ) {
-        const data = (
-            await Application.scheduleRequest({
-                url: `${source.base_url}?page=${page}`,
-                method: "GET",
-            })
-        )[1];
-        return cheerio.load(Application.arrayBufferToUTF8String(data));
+        return html;
     }
 
     async parsePopularSectionRequests(page: number, source: MangaWorldGeneric) {
-        let $: cheerio.CheerioAPI;
+        let html = "";
         if (page > 1) {
             const data = (
                 await Application.scheduleRequest({
@@ -169,18 +127,16 @@ export class Requests {
                     method: "GET",
                 })
             )[1];
-            $ = cheerio.load(Application.arrayBufferToUTF8String(data));
+            html = Application.arrayBufferToUTF8String(data);
         } else {
-            $ = cheerio.load(
-                Application.arrayBufferToUTF8String(
-                    await cache.getPageCache(
-                        "PopularSection",
-                        `${source.base_url}/archive?sort=most_read&page=${page}`,
-                    ),
+            html = Application.arrayBufferToUTF8String(
+                await cache.getPageCache(
+                    "PopularSection",
+                    `${source.base_url}/archive?sort=most_read&page=${page}`,
                 ),
             );
         }
-        return $;
+        return html;
     }
 
     async getSearchResultsRequests(url: string) {
@@ -190,7 +146,7 @@ export class Requests {
                 method: "GET",
             })
         )[1];
-        return cheerio.load(Application.arrayBufferToUTF8String(data));
+        return Application.arrayBufferToUTF8String(data);
     }
 
     async fetchPage(url: string): Promise<ArrayBuffer> {

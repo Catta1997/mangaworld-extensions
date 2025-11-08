@@ -10,7 +10,6 @@ import {
     type Tag,
     type TagSection,
 } from "@paperback/types";
-import * as cheerio from "cheerio";
 import type {
     Manga,
     MangaPageData,
@@ -139,33 +138,29 @@ export class Parsers {
         return chapters;
     }
 
-    /**
-     * Parsing chapter details
-     * @param {cheerio.CheerioAPI} $ - Request
-     * @param {string} mangaId - ID manga
-     * @param {string} id - ID chapter
-     * @return {{
-     *   id: string
-     *   mangaId: string
-     *   pages: string[]
-     * }} - Details
-     */
     parseChapterDetails(
-        $: cheerio.CheerioAPI,
-        mangaId: string,
-        id: string,
+        json: WindowEntry[],
+        chapterId: string,
+        slug: string,
+        mangaID: string,
     ): ChapterDetails {
         const pages: string[] = [];
-        for (const item of $(
-            ".col-12.text-center.position-relative img",
-        ).toArray()) {
-            const imageUrl = $(item).attr("src");
-            if (!imageUrl) continue;
-            pages.push(imageUrl.trim());
-        }
+        json.forEach((item) => {
+            if (item.kind == "chapter") {
+                const info = jsonParser.findChapterData(
+                    item.data.pages,
+                    chapterId,
+                );
+                info?.pages.forEach((page) => {
+                    pages.push(
+                        `https://cdn.mangaworld.cx/chapters/${slug}-${info?.mangaId}/${info?.chapterURL}/${page}`,
+                    );
+                });
+            }
+        });
         return {
-            id: id,
-            mangaId: mangaId,
+            id: chapterId,
+            mangaId: mangaID,
             pages: pages,
         };
     }
@@ -338,13 +333,13 @@ export class Parsers {
         favTags: boolean,
     ): Promise<{ items: DiscoverSectionItem[]; metadata: Metadata }> {
         let page = metadata?.page ?? 1;
-        const $ = await requests.parseLastMangaAddedTagsSectionRequests(
+        const html = await requests.parseLastMangaAddedTagsSectionRequests(
             page,
             source,
             favTags,
         );
         page++;
-        const windowEntry = jsonParser.getWindowEntry($);
+        const windowEntry = jsonParser.getWindowEntry(html);
         const latest = await this.parseSection(page, source, windowEntry);
         return { items: latest, metadata: { page: page } };
     }
