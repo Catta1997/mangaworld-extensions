@@ -1,4 +1,5 @@
 import { ContentRating, type Tag } from "@paperback/types";
+import * as cheerio from "cheerio";
 import type {
     ChapterList,
     Genre,
@@ -19,33 +20,6 @@ import { Requests } from "./network";
 const cacheMap = new Map<string, CacheItem>();
 const requestMap = new Map<string, Promise<ArrayBuffer>>();
 const requests = new Requests();
-
-const statusOptions = [
-    { value: "In corso", id: "ongoing" },
-    { value: "Finito", id: "completed" },
-    { value: "Droppato", id: "dropped" },
-    { value: "In pausa", id: "paused" },
-    { value: "Cancellato", id: "canceled" },
-];
-
-const typeOptions = [
-    { value: "Doujinshi", id: "doujinshi" },
-    { value: "Manga", id: "manga" },
-    { value: "Manhua", id: "manhua" },
-    { value: "Manhwa", id: "manhwa" },
-    { value: "Oneshot", id: "oneshot" },
-    { value: "Thai", id: "thai" },
-    { value: "Vietnamita", id: "vietnamese" },
-];
-
-const sortOptions = [
-    { value: "Più letti", id: "most_read" },
-    { value: "Meno letti", id: "less_read" },
-    { value: "Più recenti", id: "newest" },
-    { value: "Meno recenti", id: "oldest" },
-    { value: "A-Z", id: "a-z" },
-    { value: "Z-A", id: "z-a" },
-];
 
 export class Cache {
     async getPageCache(
@@ -274,9 +248,10 @@ export class FilterPreferences {
             const html = await requests.parseFilters(source);
             const windowEntry = jsonParser.getWindowEntry(html);
             const JSONFilter = this.extractOptionJSON(windowEntry);
-            this.setMangaTypeFilter(typeOptions);
-            this.setStatusFilter(statusOptions);
-            this.setOrderFilter(sortOptions);
+            const $ = cheerio.load(html);
+            this.setMangaTypeFilter(this.extractOptions($, ".type"));
+            this.setStatusFilter(this.extractOptions($, ".status"));
+            this.setOrderFilter(this.extractOptions($, ".sort"));
             this.setGenreFilter(JSONFilter.genres);
             this.setYearFilter(JSONFilter.year);
             Application.setState(
@@ -300,6 +275,30 @@ export class FilterPreferences {
             id: tag,
             value: tag,
         }));
+    }
+    /**
+     * Extract filter option {value, id}.
+     * @param $ - Requests.
+     * @param filterSelector - CSS selector.
+     * @returns{[{value, id}]}.
+     */
+    extractOptions(
+        $: cheerio.CheerioAPI,
+        filterSelector: string,
+    ): OptionItem[] {
+        const options = $(`${filterSelector} select.filter-select option`);
+        const result: OptionItem[] = [];
+
+        options.each((_, el) => {
+            const id = $(el).attr("data-name");
+            const label = $(el).text().trim();
+
+            if (id) {
+                result.push({ value: label, id });
+            }
+        });
+        Application.setState(JSON.stringify(result), filterSelector);
+        return result;
     }
 
     extractOptionJSON(json: WindowEntry[]): {
