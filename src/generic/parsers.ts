@@ -14,7 +14,7 @@ import {
 import type {
     Manga,
     MangaPageData,
-    TrendinManga,
+    TrendingManga,
     WindowEntry,
 } from "./jsonInterface";
 import { jsonParser, MangaWorldGeneric, tags, types } from "./main";
@@ -259,7 +259,7 @@ export class Parsers {
     parseTrendingChapters(
         metadata: MangaMetadata,
         source: MangaWorldGeneric,
-        chapters: TrendinManga[],
+        chapters: TrendingManga[],
     ): { items: DiscoverSectionItem[]; metadata: MangaMetadata } {
         const trending: DiscoverSectionItem[] = [];
         chapters.forEach((chapter) => {

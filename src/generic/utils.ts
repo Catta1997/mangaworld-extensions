@@ -5,8 +5,8 @@ import type {
     Genre,
     GlobalData,
     JSONConfig,
+    JsonData,
     MangaPageData,
-    MangaWorldData,
     Pages,
     SearchInfo,
     SearchResults,
@@ -398,7 +398,7 @@ export class JsonParser {
             throw new Error("No JSON Found");
         }
         const jsonText = match[1].trim();
-        const json = JSON.parse(jsonText) as MangaWorldData;
+        const json = JSON.parse(jsonText) as JsonData;
         return this.convertEntries(json.o.w);
     }
 

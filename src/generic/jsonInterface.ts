@@ -1,14 +1,10 @@
 export interface Genre {
-    _id: string;
     name: string;
     slug: string;
 }
 
 export interface Fansub {
-    _id: string;
     name: string;
-    link: string;
-    id: string;
 }
 
 export interface JSONConfig {
@@ -88,7 +84,7 @@ export interface ChapterList {
     pages: Pages;
 }
 
-export interface TrendinManga {
+export interface TrendingManga {
     id: string;
     manga: Manga;
     name: string;
@@ -99,7 +95,7 @@ export interface TrendinManga {
 
 export interface TrendingChaptersData {
     URL: string;
-    mostViewedChapters: TrendinManga[];
+    mostViewedChapters: TrendingManga[];
 }
 
 export interface GlobalData {
@@ -180,7 +176,7 @@ export type WindowEntry =
           meta?: { f?: number };
       };
 
-export interface MangaWorldData {
+export interface JsonData {
     o: {
         l: number;
         g: { maintenance: boolean };
