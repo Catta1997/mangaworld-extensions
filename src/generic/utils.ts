@@ -29,17 +29,13 @@ export class Cache {
     ): Promise<ArrayBuffer> {
         const cached = cacheMap.get(name);
         if (cached && cached.expires > Math.floor(Date.now() / 1000)) {
-            //console.log(`[CACHE] Use Cached Page "${name}"`);
             return cached.data;
         }
 
         // If a request is already in progress for this name, return that promise
         if (requestMap.has(name)) {
-            //console.log(`[CACHE] Awaiting Request "${name}"`);
             return requestMap.get(name)!;
         }
-
-        //console.log(`[CACHE] Fetching New Page "${name}"`);
 
         const fetchPromise = requests
             .fetchPage(url)
@@ -48,12 +44,10 @@ export class Cache {
                     expires: Math.floor(Date.now() / 1000) + cacheTime,
                     data: data,
                 });
-                //console.log(`[CACHE] New Cached "${name}"`);
                 requestMap.delete(name);
                 return data;
             })
             .catch((error) => {
-                //console.log(`[CACHE] Error on cache "${name} - ${error}"`);
                 requestMap.delete(name);
                 throw error;
             });
@@ -218,7 +212,6 @@ export class FilterPreferences {
             Application.getState("last-filter-fetch") ?? 0,
         );
         if (lastFilterFetch + 604800 > new Date().valueOf() / 1000) {
-            //console.log("[CACHE] Use Cached Filters");
             this.setGenreFilter(
                 JSON.parse(
                     Application.getState(".genres") as string,
@@ -396,7 +389,6 @@ export class JsonParser {
     }
 
     getWindowEntry(html: string): WindowEntry[] {
-        //const html = $.html();
         const regex =
             /<script[^>]*>\s*[^<]*?\$MC\s*=\s*\(window\.\$MC\|\|\[\]\)\.concat\(([\s\S]*?)\)\s*<\/script>/i;
 
