@@ -14,6 +14,7 @@ import {
 import { jsonParser, MangaWorldGeneric, tags, types } from "./main";
 import type {
     Manga,
+    MangaChapterList,
     MangaMetadata,
     MangaPageData,
     TrendingManga,
@@ -89,6 +90,18 @@ export class Parsers {
         } as SourceManga;
     }
 
+    baseChapterData(chapter: MangaChapterList, sourceManga: SourceManga) {
+        return {
+            chapterId: chapter.id,
+            sourceManga: sourceManga,
+            langCode: "🇮🇹",
+            chapNum: Number(chapter.name.split(" ")[1] ?? 1),
+            title: chapter.name,
+            version: sourceManga.mangaInfo.additionalInfo?.subs ?? "",
+            publishDate: new Date(chapter.updatedAt),
+            createdAt: new Date(chapter.createdAt),
+        };
+    }
     /**
      * Get Chapter List
      * @param items
@@ -103,35 +116,19 @@ export class Parsers {
                     item.data.pages.volumes.forEach((volume) => {
                         volume.chapters.forEach((chapter) => {
                             chapters.push({
-                                chapterId: chapter.id,
-                                sourceManga: sourceManga,
+                                ...this.baseChapterData(chapter, sourceManga),
                                 volume: Number(
-                                    volume.volume.slugFolder.split("-")[1],
+                                    volume.volume.name.split(" ")[1] ?? 1,
                                 ),
-                                version:
-                                    sourceManga.mangaInfo.additionalInfo
-                                        ?.subs ?? "",
-                                langCode: "🇮🇹",
-                                chapNum: Number(
-                                    chapter.slugFolder.split("-")[1],
-                                ),
-                                publishDate: new Date(chapter.createdAt),
                             });
                         });
                     });
                 }
                 if (item.data.pages.singleChapters.length > 0) {
                     item.data.pages.singleChapters.forEach((chapter) => {
-                        chapters.push({
-                            chapterId: chapter.id,
-                            sourceManga: sourceManga,
-                            version:
-                                sourceManga.mangaInfo.additionalInfo?.subs ??
-                                "",
-                            langCode: "🇮🇹",
-                            chapNum: Number(chapter.slugFolder.split("-")[1]),
-                            publishDate: new Date(chapter.createdAt),
-                        });
+                        chapters.push(
+                            this.baseChapterData(chapter, sourceManga),
+                        );
                     });
                 }
             }
@@ -154,9 +151,6 @@ export class Parsers {
                 );
                 const cdnUrl = item.data.CDN_URL;
                 info?.pages.forEach((page) => {
-                    console.log(
-                        `${cdnUrl}/chapters/${slug}-${info?.mangaId}/${info?.chapterURL}/${page}`,
-                    );
                     pages.push(
                         `${cdnUrl}/chapters/${slug}-${info?.mangaId}/${info?.chapterURL}/${page}`,
                     );
@@ -198,7 +192,7 @@ export class Parsers {
                         id: manga.linkId + "/" + manga.slug,
                         title: manga.title ?? "",
                         image: manga.imageT ?? manga.image ?? "",
-                        tags: manga.genres?.map((genre) => genre.name) ?? [],
+                        tags: manga.genres?.map((genre) => genre.slug) ?? [],
                         authors: manga.author.join(", ") ?? "",
                         type: manga.typeT ?? manga.type ?? "",
                     });
@@ -304,7 +298,7 @@ export class Parsers {
                     source.defaultContentRating === ContentRating.ADULT
                         ? ContentRating.ADULT
                         : tags.getRating(
-                              manga.genres?.map((genre) => genre.name) ?? [],
+                              manga.genres?.map((genre) => genre.slug) ?? [],
                           ),
                 imageUrl: manga.imageT ?? manga.image,
                 mangaId: manga.linkId + "/" + manga.slug,

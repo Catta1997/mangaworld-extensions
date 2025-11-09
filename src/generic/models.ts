@@ -65,6 +65,7 @@ export interface MangaChapterList {
     pages: string[];
     slugFolder: string;
     createdAt: string;
+    updatedAt: string;
 }
 
 export interface JSONChapter {
