@@ -22,8 +22,7 @@ import {
     type SourceManga,
 } from "@paperback/types";
 import { Forms } from "./forms";
-import type { WindowEntry } from "./jsonInterface";
-import type { MangaMetadata } from "./models";
+import type { MangaMetadata, WindowEntry } from "./models";
 import { MainInterceptor, Requests } from "./network";
 import { Parsers } from "./parsers";
 import { Cache, FilterPreferences, JsonParser, Tags, Type } from "./utils";

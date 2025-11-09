@@ -1,20 +1,22 @@
 import { ContentRating, type Tag } from "@paperback/types";
 import * as cheerio from "cheerio";
+import { jsonParser, MangaWorldGeneric } from "./main";
 import type {
+    CacheItem,
     ChapterList,
     Genre,
     GlobalData,
     JSONConfig,
     JsonData,
     MangaPageData,
+    OptionItem,
     Pages,
+    RawEntry,
     SearchInfo,
     SearchResults,
     TrendingChaptersData,
     WindowEntry,
-} from "./jsonInterface";
-import { jsonParser, MangaWorldGeneric } from "./main";
-import type { CacheItem, OptionItem, RawEntry } from "./models";
+} from "./models";
 import { Requests } from "./network";
 
 const cacheMap = new Map<string, CacheItem>();

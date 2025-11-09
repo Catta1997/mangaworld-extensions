@@ -11,14 +11,14 @@ import {
     type Tag,
     type TagSection,
 } from "@paperback/types";
+import { jsonParser, MangaWorldGeneric, tags, types } from "./main";
 import type {
     Manga,
+    MangaMetadata,
     MangaPageData,
     TrendingManga,
     WindowEntry,
-} from "./jsonInterface";
-import { jsonParser, MangaWorldGeneric, tags, types } from "./main";
-import type { MangaMetadata } from "./models";
+} from "./models";
 import { Requests } from "./network";
 
 const requests = new Requests();
