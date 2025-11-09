@@ -152,9 +152,13 @@ export class Parsers {
                     item.data.pages,
                     chapterId,
                 );
+                const cdnUrl = item.data.CDN_URL;
                 info?.pages.forEach((page) => {
+                    console.log(
+                        `${cdnUrl}/chapters/${slug}-${info?.mangaId}/${info?.chapterURL}/${page}`,
+                    );
                     pages.push(
-                        `https://cdn.mangaworld.cx/chapters/${slug}-${info?.mangaId}/${info?.chapterURL}/${page}`,
+                        `${cdnUrl}/chapters/${slug}-${info?.mangaId}/${info?.chapterURL}/${page}`,
                     );
                 });
             }
