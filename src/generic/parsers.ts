@@ -54,8 +54,8 @@ export class Parsers {
                 artist = parsedManga.artist.join(", ");
                 trama = parsedManga.trama;
                 titolo = parsedManga.title;
-                image = parsedManga.imageT ?? parsedManga.image;
-                stato = parsedManga.status;
+                image = parsedManga.imageT;
+                stato = parsedManga.statusT;
                 autore = parsedManga.author.join(", ");
                 info = parsedManga.fansub?.name ?? "Ufficiale";
                 titoliSecondari = parsedManga.extraTitles;
@@ -90,16 +90,20 @@ export class Parsers {
         } as SourceManga;
     }
 
-    baseChapterData(chapter: MangaChapterList, sourceManga: SourceManga) {
+    baseChapterData(
+        chapter: MangaChapterList,
+        sourceManga: SourceManga,
+        chapIndex: number,
+    ) {
         return {
             chapterId: chapter.id,
             sourceManga: sourceManga,
             langCode: "🇮🇹",
-            chapNum: Number(chapter.name.split(" ")[1] ?? 1),
+            chapNum: Number(chapter.name.split(" ")[1] ?? chapIndex),
             title: chapter.name,
             version: sourceManga.mangaInfo.additionalInfo?.subs ?? "",
             publishDate: new Date(chapter.updatedAt),
-            createdAt: new Date(chapter.createdAt),
+            creationDate: new Date(chapter.createdAt),
         };
     }
     /**
@@ -112,22 +116,41 @@ export class Parsers {
         const chapters: Chapter[] = [];
         items.forEach((item) => {
             if (item.kind == "chapter") {
-                if (item.data.pages.volumes.length > 0) {
-                    item.data.pages.volumes.forEach((volume) => {
-                        volume.chapters.forEach((chapter) => {
+                const elements = item.data.pages;
+                if (elements.volumes.length > 0) {
+                    elements.volumes.forEach((volume, volIndex) => {
+                        volume.chapters.forEach((chapter, chapIndex) => {
                             chapters.push({
-                                ...this.baseChapterData(chapter, sourceManga),
+                                ...this.baseChapterData(
+                                    chapter,
+                                    sourceManga,
+                                    chapIndex,
+                                ),
+                                ...(elements.volumes.length > 0
+                                    ? {
+                                          volume: Number(
+                                              volume.volume.name.split(
+                                                  " ",
+                                              )[1] ?? volIndex,
+                                          ),
+                                      }
+                                    : {}),
                                 volume: Number(
-                                    volume.volume.name.split(" ")[1] ?? 1,
+                                    volume.volume.name.split(" ")[1] ??
+                                        volIndex,
                                 ),
                             });
                         });
                     });
                 }
-                if (item.data.pages.singleChapters.length > 0) {
-                    item.data.pages.singleChapters.forEach((chapter) => {
+                if (elements.singleChapters.length > 0) {
+                    elements.singleChapters.forEach((chapter, chapIndex) => {
                         chapters.push(
-                            this.baseChapterData(chapter, sourceManga),
+                            this.baseChapterData(
+                                chapter,
+                                sourceManga,
+                                chapIndex,
+                            ),
                         );
                     });
                 }
@@ -191,10 +214,10 @@ export class Parsers {
                     items.push({
                         id: manga.linkId + "/" + manga.slug,
                         title: manga.title ?? "",
-                        image: manga.imageT ?? manga.image ?? "",
+                        image: manga.imageT ?? "",
                         tags: manga.genres?.map((genre) => genre.slug) ?? [],
                         authors: manga.author.join(", ") ?? "",
-                        type: manga.typeT ?? manga.type ?? "",
+                        type: manga.typeT ?? "",
                     });
                 });
             }
