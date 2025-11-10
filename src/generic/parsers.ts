@@ -100,7 +100,7 @@ export class Parsers {
             sourceManga: sourceManga,
             langCode: "🇮🇹",
             chapNum: Number(chapter.name.split(" ")[1] ?? chapIndex),
-            title: chapter.name,
+            title: chapter.title ?? chapter.name,
             version: sourceManga.mangaInfo.additionalInfo?.subs ?? "",
             publishDate: new Date(chapter.updatedAt),
             creationDate: new Date(chapter.createdAt),
@@ -162,11 +162,16 @@ export class Parsers {
     parseChapterDetails(
         json: WindowEntry[],
         chapterId: string,
-        slug: string,
-        mangaID: string,
     ): ChapterDetails {
         const pages: string[] = [];
+        let slug = "";
+        let mangaID = "";
         json.forEach((item) => {
+            if (item.kind == "manga") {
+                slug = item.data.manga.slugFolder;
+                mangaID = item.data.manga.id;
+            }
+
             if (item.kind == "chapter") {
                 const info = jsonParser.findChapterData(
                     item.data.pages,

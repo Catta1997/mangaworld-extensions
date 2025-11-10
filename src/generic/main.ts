@@ -198,14 +198,7 @@ export abstract class MangaWorldGeneric
         );
         const html = Application.arrayBufferToUTF8String(await data);
         const windowEntry = jsonParser.getWindowEntry(html);
-        const slug = chapter.sourceManga.mangaId.split("/")[1];
-        const id = chapter.sourceManga.mangaId.split("/")[0];
-        return this.parser.parseChapterDetails(
-            windowEntry,
-            chapter.chapterId,
-            slug ?? "",
-            id ?? "",
-        );
+        return this.parser.parseChapterDetails(windowEntry, chapter.chapterId);
     }
 
     async getDiscoverSections(): Promise<DiscoverSection[]> {

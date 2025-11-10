@@ -62,6 +62,7 @@ export interface MangaChapterList {
     id: string;
     manga: string;
     name: string;
+    title?: string | null;
     pages: string[];
     slugFolder: string;
     createdAt: string;

@@ -330,36 +330,28 @@ export class FilterPreferences {
 }
 
 export class JsonParser {
-    isMangaData(data: unknown): data is MangaPageData {
-        return typeof data === "object" && data !== null && "manga" in data;
+    isMangaData(data: object): data is MangaPageData {
+        return "manga" in data;
     }
 
-    isGlobalData(data: unknown): data is { globalData: GlobalData } {
-        return (
-            typeof data === "object" && data !== null && "globalData" in data
-        );
+    isGlobalData(data: object): data is { globalData: GlobalData } {
+        return "globalData" in data;
     }
 
-    isMangaChapterData(data: unknown): data is ChapterList {
-        return typeof data === "object" && data !== null && "CDN_URL" in data;
+    isMangaChapterData(data: object): data is ChapterList {
+        return "CDN_URL" in data;
     }
 
-    isTrendingData(data: unknown): data is TrendingChaptersData {
-        return (
-            typeof data === "object" &&
-            data !== null &&
-            "mostViewedChapters" in data
-        );
+    isTrendingData(data: object): data is TrendingChaptersData {
+        return "mostViewedChapters" in data;
     }
 
-    isSearchData(data: unknown): data is SearchResults {
-        return typeof data === "object" && data !== null && "selected" in data;
+    isSearchData(data: object): data is SearchResults {
+        return "selected" in data;
     }
 
-    isSearchInfoData(data: unknown): data is SearchInfo {
-        return (
-            typeof data === "object" && data !== null && "totalPages" in data
-        );
+    isSearchInfoData(data: object): data is SearchInfo {
+        return "totalPages" in data;
     }
 
     convertEntries(w: (RawEntry | WindowEntry)[]): WindowEntry[] {
@@ -367,19 +359,20 @@ export class JsonParser {
             if (!Array.isArray(entry)) return entry;
 
             const [key, index, data, meta] = entry;
-
-            if (this.isMangaData(data))
-                return { kind: "manga", key, index, data, meta };
-            if (this.isGlobalData(data))
-                return { kind: "global", key, index, data, meta };
-            if (this.isTrendingData(data))
-                return { kind: "trending", key, index, data, meta };
-            if (this.isMangaChapterData(data))
-                return { kind: "chapter", key, index, data, meta };
-            if (this.isSearchData(data))
-                return { kind: "search", key, index, data, meta };
-            if (this.isSearchInfoData(data))
-                return { kind: "searchInfo", key, index, data, meta };
+            if (typeof data === "object" && data !== null) {
+                if (this.isMangaData(data))
+                    return { kind: "manga", key, index, data, meta };
+                if (this.isGlobalData(data))
+                    return { kind: "global", key, index, data, meta };
+                if (this.isTrendingData(data))
+                    return { kind: "trending", key, index, data, meta };
+                if (this.isMangaChapterData(data))
+                    return { kind: "chapter", key, index, data, meta };
+                if (this.isSearchData(data))
+                    return { kind: "search", key, index, data, meta };
+                if (this.isSearchInfoData(data))
+                    return { kind: "searchInfo", key, index, data, meta };
+            }
             return {
                 kind: "config",
                 key,
