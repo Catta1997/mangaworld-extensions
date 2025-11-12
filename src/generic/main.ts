@@ -318,18 +318,6 @@ export abstract class MangaWorldGeneric
                             item.data.globalData.topMangas,
                         );
                     break;
-                case "manga":
-                    if (id == "updated_section") {
-                        const updated_section =
-                            await this.parser.parseLastAddedSection(
-                                metadata,
-                                this,
-                                item.data,
-                            );
-                        if (updated_section)
-                            chapterUpdate.push(updated_section);
-                    }
-                    break;
             }
         }
         if (chapterUpdate.length > 0) {
@@ -339,6 +327,9 @@ export abstract class MangaWorldGeneric
             return section;
         }
         switch (id) {
+            case "updated_section": {
+                return this.parser.parseLastAddedSectionPages(metadata, this);
+            }
             case "most_read_section": {
                 return this.parser.parseMostReadSection(metadata, this);
             }
