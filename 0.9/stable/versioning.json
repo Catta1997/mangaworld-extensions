@@ -1,5 +1,5 @@
 {
-  "buildTime": "2025-11-27T13:49:01.447Z",
+  "buildTime": "2025-11-27T16:14:26.946Z",
   "builtWith": {
     "toolchain": "1.0.0-alpha.57",
     "types": "1.0.0-alpha.57"
@@ -15,7 +15,6 @@
       "version": "1.0.0-alpha.1",
       "icon": "icon.png",
       "language": "it",
-      "contentRating": "SAFE",
       "capabilities": [
         1,
         4,
@@ -24,9 +23,9 @@
       ],
       "badges": [
         {
-          "label": "Italian",
+          "label": "Italian 🇮🇹",
           "textColor": "#ffffff",
-          "backgroundColor": "#9ad3c7"
+          "backgroundColor": "#28eac2"
         }
       ],
       "developers": [
@@ -35,6 +34,7 @@
           "website": "https://github.com/Catta1997"
         }
       ],
+      "contentRating": "SAFE",
       "id": "MangaWorld"
     },
     {
@@ -43,7 +43,6 @@
       "version": "1.0.0-alpha.1",
       "icon": "icon.png",
       "language": "it",
-      "contentRating": "ADULT",
       "capabilities": [
         1,
         4,
@@ -52,9 +51,9 @@
       ],
       "badges": [
         {
-          "label": "Italian",
+          "label": "Italian 🇮🇹",
           "textColor": "#ffffff",
-          "backgroundColor": "#9ad3c7"
+          "backgroundColor": "#28eac2"
         }
       ],
       "developers": [
@@ -63,6 +62,7 @@
           "website": "https://github.com/Catta1997"
         }
       ],
+      "contentRating": "ADULT",
       "id": "MangaWorldAdult"
     }
   ]
