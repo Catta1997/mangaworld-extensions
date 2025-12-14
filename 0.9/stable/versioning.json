@@ -1,5 +1,5 @@
 {
-  "buildTime": "2025-12-14T16:47:12.786Z",
+  "buildTime": "2025-12-14T22:58:45.838Z",
   "builtWith": {
     "toolchain": "1.0.0-alpha.57",
     "types": "1.0.0-alpha.57"
@@ -11,7 +11,7 @@
   "sources": [
     {
       "name": "MangaWorld",
-      "description": "Extension that pulls manga from MangaWorld.",
+      "description": "Extension that pulls content from www.mangaworld.mx.",
       "version": "1.0.0-alpha.1",
       "icon": "icon.png",
       "language": "it",
@@ -39,7 +39,7 @@
     },
     {
       "name": "MangaWorldAdult",
-      "description": "Extension that pulls manga from MangaWorldAdult.",
+      "description": "Extension that pulls content from www.mangaworldadult.net.",
       "version": "1.0.0-alpha.1",
       "icon": "icon.png",
       "language": "it",
