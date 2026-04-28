@@ -15,17 +15,17 @@ import {
   type Extension,
   type MangaProviding,
   type PagedResults,
-  type SearchFilter,
   type SearchQuery,
   type SearchResultItem,
   type SearchResultsProviding,
   type SettingsFormProviding,
   type SortingOption,
   type SourceManga,
+  AdvancedSearchForm,
 } from "@paperback/types";
 
-import { Forms } from "./forms";
-import type { MangaMetadata, WindowEntry } from "./models";
+import { Forms, MangaWorldAdvancedSearchForm } from "./forms";
+import type { MangaMetadata, SearchMetadata, WindowEntry } from "./models";
 import { MainInterceptor, Requests } from "./network";
 import { Parsers } from "./parsers";
 import { FilterPreferences, JsonParser, Tags, Type } from "./utils";
@@ -83,66 +83,15 @@ export abstract class MangaWorldGeneric
     await filter.populateFilter(this);
     return new Forms(this);
   }
-
-  async getSearchFilters(): Promise<SearchFilter[]> {
+  async getAdvancedSearchForm(
+    searchQuery: SearchQuery<SearchMetadata>,
+  ): Promise<AdvancedSearchForm> {
     await filter.populateFilter(this);
-    const filters: SearchFilter[] = [];
-    const def_value = ((Application.getState("def_type") as string[]) ?? [])[0];
-    const getExcludedTypeObject = {
-      ...Object.fromEntries(
-        filter
-          .getMangaTypeFilter()
-          .filter((option) => types.blacklistedType(option.id))
-          .map((item) => [item.id, "excluded" as const]),
-      ),
-      ...(def_value ? { [def_value.toLowerCase()]: "included" as const } : {}),
-    } as Record<string, "included" | "excluded">;
-
-    const getExcludedValueObject = Object.fromEntries(
-      filter
-        .getGenreFilter()
-        .filter((option) => tags.blacklistedTags([option.id]))
-        .map((item) => [item.id, "excluded" as const]),
-    ) as Record<string, "included" | "excluded">;
-    filters.push({
-      type: "multiselect",
-      options: filter.getMangaTypeFilter(),
-      id: "types",
-      allowExclusion: true,
-      title: "Tipologia",
-      value: getExcludedTypeObject,
-      allowEmptySelection: true,
-      maximum: 3,
-    });
-    filters.push({
-      type: "multiselect",
-      options: filter.getGenreFilter(),
-      id: "genres",
-      allowExclusion: true,
-      title: "Genere",
-      value: getExcludedValueObject,
-      allowEmptySelection: true,
-      maximum: 5,
-    });
-    filters.push({
-      type: "dropdown",
-      options: filter.getStatusFilter(),
-      id: "status",
-      title: "Stato",
-      value: "",
-    });
-    filters.push({
-      type: "dropdown",
-      options: filter.getYearFilter(),
-      id: "year",
-      title: "Anno",
-      value: "",
-    });
-    return filters;
+    return new MangaWorldAdvancedSearchForm(searchQuery);
   }
 
   async getSearchResults(
-    query: SearchQuery,
+    query: SearchQuery<SearchMetadata>,
     metadata: MangaMetadata | undefined,
     sorting: SortingOption,
   ): Promise<PagedResults<SearchResultItem>> {

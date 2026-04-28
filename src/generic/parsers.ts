@@ -208,12 +208,9 @@ export class Parsers {
           type: "genresCarouselItem",
           searchQuery: {
             title: "",
-            filters: [
-              {
-                id: "types",
-                value: getExcludedTypeObject,
-              },
-            ],
+            metadata: {
+              type: getExcludedTypeObject,
+            },
           },
           name: filterItem.value,
           metadata: metadata,
@@ -248,12 +245,9 @@ export class Parsers {
           type: "genresCarouselItem",
           searchQuery: {
             title: "",
-            filters: [
-              {
-                id: "genres",
-                value: getExcludedValueObject,
-              },
-            ],
+            metadata: {
+              genres: getExcludedValueObject,
+            },
           },
           name: filterItem.value,
           metadata: metadata,

@@ -10,22 +10,24 @@ import {
   type SortingOption,
 } from "@paperback/types";
 
-import { filter, MangaWorldGeneric } from "./main";
+import { MangaWorldGeneric } from "./main";
+import type { SearchMetadata } from "./models";
 
 export class Requests {
   constructSearchRequestURL(
     page: number,
-    query: SearchQuery = { title: "", filters: [] },
+    query: SearchQuery<SearchMetadata> = { title: "", metadata: {} },
     sorting: SortingOption | undefined,
     source: MangaWorldGeneric,
   ): {
     url: string;
     excluded: { generi: string[]; tipi: string[] };
   } {
-    const generi: string[] = [];
+    const generi: string[] = query.metadata?.genres ?? [];
     const generi_esclusi: string[] = [];
     const tipi_esclusi: string[] = [];
-    const tipologia: string[] = [];
+    const tipologia: string[] = query.metadata?.type ?? [];
+    /*
     const getFilterValue = (id: string) => query.filters.find((filter) => filter.id == id)?.value;
     const genres: string | Record<string, "included" | "excluded"> = getFilterValue("genres") ?? "";
     const types: string | Record<string, "included" | "excluded"> = getFilterValue("types") ?? "";
@@ -47,8 +49,9 @@ export class Requests {
         if (tag[1] == "excluded") tipi_esclusi.push(tag[0]);
       }
     }
-    const statusFilter = status as string;
-    const yearFilter = year as string;
+    */
+    const statusFilter = query.metadata?.status ?? [];
+    const yearFilter = query.metadata?.year ?? 0;
     const url = new URL(source.base_url).addPathComponent("archive");
     if (query.title.toString().length > 0)
       url.setQueryItem("keyword", query.title.toString() ?? "");
@@ -57,7 +60,7 @@ export class Requests {
     if (generi.length > 0) url.setQueryItem("genre", generi);
     if (tipologia.length > 0) url.setQueryItem("type", tipologia);
     if (statusFilter.length > 0) url.setQueryItem("status", statusFilter ?? "");
-    if (yearFilter.length > 0) url.setQueryItem("year", yearFilter ?? "");
+    if (yearFilter != 0) url.setQueryItem("year", yearFilter.toString() ?? "");
     return {
       url: url.toString(),
       excluded: { generi: generi_esclusi, tipi: tipi_esclusi },
