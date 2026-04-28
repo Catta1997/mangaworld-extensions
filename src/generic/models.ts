@@ -1,6 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 /* Copyright © 2026 Inkdex */
 
+import type { JSONObject } from "@paperback/types";
+
 export type MangaMetadata = {
   page: number;
 };
@@ -8,11 +10,6 @@ export type OptionItem = {
   value: string;
   id: string;
 };
-export type CacheItem = {
-  expires: number;
-  data: ArrayBuffer;
-};
-
 export type RawEntry = [key: string, index: number, data: unknown, meta?: { f?: number }];
 
 export interface Genre {
@@ -203,3 +200,12 @@ export interface JsonData {
     w: WindowEntry[];
   };
 }
+
+export interface SearchMetadata extends JSONObject {
+  genres?: string[];
+  type?: string[];
+  status?: string[];
+  sort?: string[];
+  year?: number;
+}
+//["genres", "type", "status", "sort", "year"]
