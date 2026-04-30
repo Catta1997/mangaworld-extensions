@@ -10,7 +10,7 @@ import {
   type SortingOption,
 } from "@paperback/types";
 
-import { MangaWorldGeneric } from "./main";
+import { filter, MangaWorldGeneric } from "./main";
 import type { SearchMetadata } from "./models";
 
 export class Requests {
@@ -23,33 +23,26 @@ export class Requests {
     url: string;
     excluded: { generi: string[]; tipi: string[] };
   } {
-    const generi: string[] = query.metadata?.genres ?? [];
+    const genres: Record<string, "included" | "excluded"> = query.metadata?.genres ?? {};
+    const types: Record<string, "included" | "excluded"> = query.metadata?.type ?? {};
+
+    const generi: string[] = [];
     const generi_esclusi: string[] = [];
     const tipi_esclusi: string[] = [];
-    const tipologia: string[] = query.metadata?.type ?? [];
-    /*
-    const getFilterValue = (id: string) => query.filters.find((filter) => filter.id == id)?.value;
-    const genres: string | Record<string, "included" | "excluded"> = getFilterValue("genres") ?? "";
-    const types: string | Record<string, "included" | "excluded"> = getFilterValue("types") ?? "";
-    const status: string | Record<string, "included" | "excluded"> = getFilterValue("status") ?? "";
-    const year: string | Record<string, "included" | "excluded"> = getFilterValue("year") ?? "";
-    if (genres && typeof genres === "object") {
-      for (const tag of Object.entries(genres)) {
-        if (tag[1] == "included") generi.push(tag[0]);
-        if (tag[1] == "excluded")
-          generi_esclusi.push(
-            filter.getGenreFilter().find((item) => item.id === tag[0])?.value ?? "",
-          );
-      }
+    const tipologia: string[] = [];
+    for (const tag of Object.entries(genres)) {
+      if (tag[1] == "included") generi.push(tag[0]);
+      if (tag[1] == "excluded")
+        generi_esclusi.push(
+          filter.getGenreFilter().find((item) => item.id === tag[0])?.value ?? "",
+        );
     }
-
     if (types && typeof types === "object") {
       for (const tag of Object.entries(types)) {
         if (tag[1] == "included") tipologia.push(tag[0]);
         if (tag[1] == "excluded") tipi_esclusi.push(tag[0]);
       }
     }
-    */
     const statusFilter = query.metadata?.status ?? [];
     const yearFilter = query.metadata?.year ?? 0;
     const url = new URL(source.base_url).addPathComponent("archive");

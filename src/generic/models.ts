@@ -202,8 +202,8 @@ export interface JsonData {
 }
 
 export interface SearchMetadata extends JSONObject {
-  genres?: string[];
-  type?: string[];
+  genres?: Record<string, "included" | "excluded">;
+  type?: Record<string, "included" | "excluded">;
   status?: string[];
   sort?: string[];
   year?: number;
