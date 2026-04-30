@@ -24,7 +24,8 @@ import {
   AdvancedSearchForm,
 } from "@paperback/types";
 
-import { Forms, MangaWorldAdvancedSearchForm } from "./forms";
+import { MangaWorldAdvancedSearchForm } from "./forms/search";
+import { Forms } from "./forms/settings";
 import type { MangaMetadata, SearchMetadata, WindowEntry } from "./models";
 import { MainInterceptor, Requests } from "./network";
 import { Parsers } from "./parsers";
@@ -87,6 +88,18 @@ export abstract class MangaWorldGeneric
     searchQuery: SearchQuery<SearchMetadata>,
   ): Promise<AdvancedSearchForm> {
     await filter.populateFilter(this);
+    const def_type = (Application.getState("def_type") as string[] | undefined) ?? [];
+    const hyde_type = (Application.getState("hide_type") as string[] | undefined) ?? [];
+    const hide_tags = (Application.getState("hide_tags") as string[] | undefined) ?? [];
+    if (searchQuery.metadata === undefined) {
+      searchQuery.metadata = {
+        type: Object.fromEntries([
+          ...def_type.map((k) => [k, "included"] as const),
+          ...hyde_type.map((k) => [k, "excluded"] as const),
+        ]),
+        genres: Object.fromEntries(hide_tags.map((k) => [k, "excluded"])) ?? {},
+      };
+    }
     return new MangaWorldAdvancedSearchForm(searchQuery);
   }
 
@@ -95,6 +108,18 @@ export abstract class MangaWorldGeneric
     metadata: MangaMetadata | undefined,
     sorting: SortingOption,
   ): Promise<PagedResults<SearchResultItem>> {
+    const def_type = (Application.getState("def_type") as string[] | undefined) ?? [];
+    const hyde_type = (Application.getState("hide_type") as string[] | undefined) ?? [];
+    const hide_tags = (Application.getState("hide_tags") as string[] | undefined) ?? [];
+    if (query.metadata === undefined) {
+      query.metadata = {
+        type: Object.fromEntries([
+          ...def_type.map((k) => [k, "included"] as const),
+          ...hyde_type.map((k) => [k, "excluded"] as const),
+        ]),
+        genres: Object.fromEntries(hide_tags.map((k) => [k, "excluded"])) ?? {},
+      };
+    }
     const page = metadata?.page ?? 1;
     const { url, excluded } = this.requestManager.constructSearchRequestURL(
       page,

@@ -17,8 +17,8 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "@paperback/toolchain": "^1.0.0-alpha.78",
-    "@paperback/types": "^1.0.0-alpha.78",
+    "@paperback/toolchain": "^1.0.0-alpha.79",
+    "@paperback/types": "^1.0.0-alpha.79",
     "cheerio": "^1.2.0",
     "husky": "^9.1.7",
     "oxfmt": "^0.46.0",
