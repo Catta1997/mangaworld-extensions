@@ -17,20 +17,21 @@ import type { SearchMetadata } from "../models";
 
 export class MangaWorldAdvancedSearchForm extends AdvancedSearchForm {
   private searchMetadata: SearchMetadata;
+
   constructor(searchQuery: SearchQuery<SearchMetadata>) {
     super();
     if (searchQuery.metadata !== undefined) {
       this.searchMetadata = searchQuery.metadata;
     } else {
+      const def_type = (Application.getState("def_type") as string[] | undefined) ?? [];
+      const hyde_type = (Application.getState("hide_type") as string[] | undefined) ?? [];
+      const hide_tags = (Application.getState("hide_tags") as string[] | undefined) ?? [];
       this.searchMetadata = {
-        language: [],
-        male: [],
-        female: [],
-        character: [],
-        other: [],
-        parody: [],
-        author: [],
-        mixed: [],
+        type: Object.fromEntries([
+          ...def_type.map((k) => [k, "included"] as const),
+          ...hyde_type.map((k) => [k, "excluded"] as const),
+        ]),
+        genres: Object.fromEntries(hide_tags.map((k) => [k, "excluded"])) ?? {},
       };
     }
   }
