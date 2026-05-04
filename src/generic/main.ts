@@ -88,18 +88,6 @@ export abstract class MangaWorldGeneric
     searchQuery: SearchQuery<SearchMetadata>,
   ): Promise<AdvancedSearchForm> {
     await filter.populateFilter(this);
-    const def_type = (Application.getState("def_type") as string[] | undefined) ?? [];
-    const hyde_type = (Application.getState("hide_type") as string[] | undefined) ?? [];
-    const hide_tags = (Application.getState("hide_tags") as string[] | undefined) ?? [];
-    if (searchQuery.metadata === undefined) {
-      searchQuery.metadata = {
-        type: Object.fromEntries([
-          ...def_type.map((k) => [k, "included"] as const),
-          ...hyde_type.map((k) => [k, "excluded"] as const),
-        ]),
-        genres: Object.fromEntries(hide_tags.map((k) => [k, "excluded"])) ?? {},
-      };
-    }
     return new MangaWorldAdvancedSearchForm(searchQuery);
   }
 
@@ -108,10 +96,10 @@ export abstract class MangaWorldGeneric
     metadata: MangaMetadata | undefined,
     sorting: SortingOption,
   ): Promise<PagedResults<SearchResultItem>> {
-    const def_type = (Application.getState("def_type") as string[] | undefined) ?? [];
-    const hyde_type = (Application.getState("hide_type") as string[] | undefined) ?? [];
-    const hide_tags = (Application.getState("hide_tags") as string[] | undefined) ?? [];
     if (query.metadata === undefined) {
+      const def_type = (Application.getState("def_type") as string[] | undefined) ?? [];
+      const hyde_type = (Application.getState("hide_type") as string[] | undefined) ?? [];
+      const hide_tags = (Application.getState("hide_tags") as string[] | undefined) ?? [];
       query.metadata = {
         type: Object.fromEntries([
           ...def_type.map((k) => [k, "included"] as const),
