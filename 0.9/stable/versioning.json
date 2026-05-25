@@ -1,5 +1,5 @@
 {
-  "buildTime": "2026-05-25T07:46:46.957Z",
+  "buildTime": "2026-05-25T07:51:13.554Z",
   "builtWith": {
     "toolchain": "1.0.0-alpha.87",
     "types": "1.0.0-alpha.87"
@@ -12,7 +12,7 @@
     {
       "name": "MangaWorld",
       "description": "Extension that pulls content from www.mangaworld.mx.",
-      "version": "1.0.0-alpha.3",
+      "version": "1.0.0-alpha.4",
       "icon": "icon.png",
       "language": "it",
       "contentRating": "SAFE",
@@ -34,7 +34,7 @@
     {
       "name": "MangaWorldAdult",
       "description": "Extension that pulls content from www.mangaworldadult.net.",
-      "version": "1.0.0-alpha.3",
+      "version": "1.0.0-alpha.4",
       "icon": "icon.png",
       "language": "it",
       "contentRating": "ADULT",
