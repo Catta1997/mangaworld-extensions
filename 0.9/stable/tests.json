@@ -13,38 +13,38 @@
         "name": "getSortingOptions",
         "runner": {},
         "status": "pass",
-        "duration": 1978
+        "duration": 2355
       },
       {
         "name": "getSearchResults",
         "runner": {},
         "status": "pass",
-        "duration": 1404
+        "duration": 1873
       },
       {
         "name": "getMangaDetails",
         "runner": {},
         "status": "pass",
-        "duration": 491
+        "duration": 738
       },
       {
         "name": "getChapters",
         "runner": {},
         "status": "pass",
-        "duration": 520
+        "duration": 1127
       },
       {
         "name": "getChapterDetails",
         "runner": {},
         "status": "pass",
-        "duration": 760
+        "duration": 796
       }
     ],
     "summary": {
       "passed": 6,
       "failed": 0,
       "total": 6,
-      "duration": 5180
+      "duration": 6916
     }
   },
   "MangaWorldAdult": {
@@ -55,44 +55,44 @@
         "name": "initialisation",
         "runner": {},
         "status": "pass",
-        "duration": 0
+        "duration": 1
       },
       {
         "name": "getSortingOptions",
         "runner": {},
         "status": "pass",
-        "duration": 1233
+        "duration": 1461
       },
       {
         "name": "getSearchResults",
         "runner": {},
         "status": "pass",
-        "duration": 894
+        "duration": 1209
       },
       {
         "name": "getMangaDetails",
         "runner": {},
         "status": "pass",
-        "duration": 287
+        "duration": 1246
       },
       {
         "name": "getChapters",
         "runner": {},
         "status": "pass",
-        "duration": 780
+        "duration": 657
       },
       {
         "name": "getChapterDetails",
         "runner": {},
         "status": "pass",
-        "duration": 293
+        "duration": 531
       }
     ],
     "summary": {
       "passed": 6,
       "failed": 0,
       "total": 6,
-      "duration": 3487
+      "duration": 5105
     }
   }
 }
