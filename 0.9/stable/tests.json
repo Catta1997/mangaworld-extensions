@@ -7,44 +7,44 @@
         "name": "initialisation",
         "runner": {},
         "status": "pass",
-        "duration": 25
+        "duration": 27
       },
       {
         "name": "getSortingOptions",
         "runner": {},
         "status": "pass",
-        "duration": 1759
+        "duration": 1713
       },
       {
         "name": "getSearchResults",
         "runner": {},
         "status": "pass",
-        "duration": 1232
+        "duration": 1196
       },
       {
         "name": "getMangaDetails",
         "runner": {},
         "status": "pass",
-        "duration": 538
+        "duration": 569
       },
       {
         "name": "getChapters",
         "runner": {},
         "status": "pass",
-        "duration": 521
+        "duration": 624
       },
       {
         "name": "getChapterDetails",
         "runner": {},
         "status": "pass",
-        "duration": 514
+        "duration": 645
       }
     ],
     "summary": {
       "passed": 6,
       "failed": 0,
       "total": 6,
-      "duration": 4589
+      "duration": 4774
     }
   },
   "MangaWorldAdult": {
@@ -61,38 +61,38 @@
         "name": "getSortingOptions",
         "runner": {},
         "status": "pass",
-        "duration": 1095
+        "duration": 1132
       },
       {
         "name": "getSearchResults",
         "runner": {},
         "status": "pass",
-        "duration": 772
+        "duration": 824
       },
       {
         "name": "getMangaDetails",
         "runner": {},
         "status": "pass",
-        "duration": 385
+        "duration": 269
       },
       {
         "name": "getChapters",
         "runner": {},
         "status": "pass",
-        "duration": 345
+        "duration": 272
       },
       {
         "name": "getChapterDetails",
         "runner": {},
         "status": "pass",
-        "duration": 378
+        "duration": 265
       }
     ],
     "summary": {
       "passed": 6,
       "failed": 0,
       "total": 6,
-      "duration": 2975
+      "duration": 2762
     }
   }
 }
