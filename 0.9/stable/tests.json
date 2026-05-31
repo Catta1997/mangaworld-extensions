@@ -7,44 +7,44 @@
         "name": "initialisation",
         "runner": {},
         "status": "pass",
-        "duration": 26
+        "duration": 29
       },
       {
         "name": "getSortingOptions",
         "runner": {},
         "status": "pass",
-        "duration": 6562
+        "duration": 1889
       },
       {
         "name": "getSearchResults",
         "runner": {},
         "status": "pass",
-        "duration": 1354
+        "duration": 1384
       },
       {
         "name": "getMangaDetails",
         "runner": {},
         "status": "pass",
-        "duration": 502
+        "duration": 622
       },
       {
         "name": "getChapters",
         "runner": {},
         "status": "pass",
-        "duration": 489
+        "duration": 780
       },
       {
         "name": "getChapterDetails",
         "runner": {},
         "status": "pass",
-        "duration": 514
+        "duration": 583
       }
     ],
     "summary": {
       "passed": 6,
       "failed": 0,
       "total": 6,
-      "duration": 9447
+      "duration": 5287
     }
   },
   "MangaWorldAdult": {
@@ -55,44 +55,44 @@
         "name": "initialisation",
         "runner": {},
         "status": "pass",
-        "duration": 1
+        "duration": 0
       },
       {
         "name": "getSortingOptions",
         "runner": {},
         "status": "pass",
-        "duration": 1264
+        "duration": 1225
       },
       {
         "name": "getSearchResults",
         "runner": {},
         "status": "pass",
-        "duration": 800
+        "duration": 740
       },
       {
         "name": "getMangaDetails",
         "runner": {},
         "status": "pass",
-        "duration": 258
+        "duration": 264
       },
       {
         "name": "getChapters",
         "runner": {},
         "status": "pass",
-        "duration": 272
+        "duration": 266
       },
       {
         "name": "getChapterDetails",
         "runner": {},
         "status": "pass",
-        "duration": 272
+        "duration": 247
       }
     ],
     "summary": {
       "passed": 6,
       "failed": 0,
       "total": 6,
-      "duration": 2867
+      "duration": 2742
     }
   }
 }
